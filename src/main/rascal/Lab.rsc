@@ -15,12 +15,9 @@ import vis::Charts;
 import vis::Graphs;
 import Content;
 
-// --------------------------------------------------------------------------
 // volume: Lines of code
 
-public void linesOfCode() {
-   loc project = |file:///smallsql/|;
-   M3 model = createM3FromDirectory(project);
+public void linesOfCode(loc cl, M3 model) {
    set[loc] javaFiles = files(model);
    int totalLines = 0;
    for (loc f <- javaFiles) {
@@ -32,32 +29,7 @@ public void linesOfCode() {
 }
 
 // size of each unit (a unit in java is a method)
-
-//manier a
-public void numberOfUnits() {
-    loc project = |file:///smallsql/|;
-    M3 model = createM3FromDirectory(project);
-
-    // relation: class -> method/constructor
-    rel[loc, loc] methoden =
-    { <x, y> | <x, y> <- model.containment,
-               x.scheme == "java+class",
-               (y.scheme == "java+method" ||
-                y.scheme == "java+constructor")
-    };
-
-    // total number of units = total number of methods
-    int totalUnits = size(range(methoden));
-
-    println("SmallSQL");
-    println("---------");
-    println("Number of units (methods): <totalUnits>");
-}
-
-//manier B
-// Print number of methods (units) in a project
-public void numberOfUnits(loc project) {
-    M3 model = createM3FromDirectory(project);
+public void numberOfUnits(loc cl, M3 model) {
 
     // collect all methods and constructors
     list[loc] allMethods = [l | l <- methods(model)];
@@ -68,6 +40,12 @@ public void numberOfUnits(loc project) {
     println("---------");
     println("Number of units (methods): <totalUnits>");
 }
+
+//aanroepen in terminal met
+//    loc project = |file:///smallsql/|;
+//    M3 model = createM3FromDirectory(project);
+//    linesOfCode(project, model); 
+//    numberOfUnits(project, model);
 
 // cyclomatic complexity of each unit: 1-10 is simple, 11-20 more complex, moderate risk, 
 // 21-50 complex, high risk, > 50 untestable, very high risk
