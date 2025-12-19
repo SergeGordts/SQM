@@ -28,7 +28,7 @@ public void linesOfCode(loc cl, M3 model) {
     println("lines of code: <totalLines>");
 }
 
-// size of each unit (a unit in java is a method)
+// number of units (a unit in java is a method)
 public void numberOfUnits(loc cl, M3 model) {
 
     // collect all methods and constructors
@@ -40,6 +40,62 @@ public void numberOfUnits(loc cl, M3 model) {
     println("---------");
     println("Number of units (methods): <totalUnits>");
 }
+
+
+// unit size: from "Deriving Metric Thresholds from Benchmark Data" by Visser et al
+// This article discusses a method that determines metric thresholds empirically from measurement data.
+// Table IV in this article shows the empirically derived Thresholds for Unit Size (Java and other OO systems)
+// The thresholds are based on benchmarked quantiles of the distribution of unit size (LOC per method). The authors use the 70th, 80th, and 90th percentiles as thresholds that capture meaningful variation while weighting by code volume across many systems.
+// | Metric                       | 70%    | 80%    | 90%    |
+// Unit size (LOC per unit)       | 30     | 44     | 74     |
+// so Simple is ≤ 30, Moderate > 30 and ≤ 44, High > 44 and ≤ 74 and Very high > 74                                 
+
+//they pool measurement data across many systems (100 projects), aggregates relative size weighting (LOC) so larger units contribute proportionally,
+//chooses quantiles (70%, 80%, 90%) that emphasize meaningful code volume splits, and rounds values to practical integer thresholds. 
+
+public void unitSizeDistribution(loc cl, M3 model) {
+    // collect all methods
+   list[loc] allMethods = [l | l <- methods(model)];
+
+    // compute LOC per method
+   list[int] methodSizes = [size(readFileLines(m)) | m <- allMethods];
+
+    // initialize counters
+    int simple = 0;
+    int moderate = 0;
+    int high = 0;
+    int veryHigh = 0;
+
+    // categorize LOC per method
+    for (int lSize <- methodSizes) { // Added opening brace '{'
+        if (lSize <= 15) {
+            simple += lSize;
+        } else if (lSize <= 30) {
+            moderate += lSize;
+        } else if (lSize <= 60) {
+            high += lSize;
+        } else {
+            veryHigh += lSize;
+        }
+    } // This now correctly closes the 'for' loop
+
+    int totalLOC = sum(methodSizes);
+
+    // print unit size distribution
+    // Avoid division by zero if totalLOC is 0
+    if (totalLOC > 0) {
+        println("unit size:");
+        println("* simple: <100.0 * simple / totalLOC>%");
+        println("* moderate: <100.0 * moderate / totalLOC>%");
+        println("* high: <100.0 * high / totalLOC>%");
+        println("* very high: <100.0 * veryHigh / totalLOC>%");
+    } else {
+        println("No methods found to analyze.");
+    }
+}
+
+
+
 
 //aanroepen in terminal met
 //    loc project = |file:///smallsql/|;
