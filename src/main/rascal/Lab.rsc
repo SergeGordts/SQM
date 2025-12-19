@@ -74,23 +74,14 @@ public void unitSizeDistribution(loc cl, M3 model) {
 
     if (totalLOC > 0) {
         println("unit size:");
-        println("* simple: <100.0 * simple / totalLOC>%");
-        println("* moderate: <100.0 * moderate / totalLOC>%");
-        println("* high: <100.0 * high / totalLOC>%");
-        println("* very high: <100.0 * veryHigh / totalLOC>%");
+        println(" simple: <100.0 * simple / totalLOC>%");
+        println(" moderate: <100.0 * moderate / totalLOC>%");
+        println(" high: <100.0 * high / totalLOC>%");
+        println(" very high: <100.0 * veryHigh / totalLOC>%");
     } else {
         println("No methods found to analyze.");
     }
 }
-
-
-
-
-//aanroepen in terminal met
-//    loc project = |file:///smallsql/|;
-//    M3 model = createM3FromDirectory(project);
-//    linesOfCode(project, model); 
-//    numberOfUnits(project, model);
 
 // cyclomatic complexity of each unit: 1-10 is simple, 11-20 more complex, moderate risk, 
 // 21-50 complex, high risk, > 50 untestable, very high risk
@@ -103,78 +94,57 @@ str riskClass(int cc) {
 }
 
 // Approximate McCabe CC by counting decision points in method source
-int approxCyclomatic(M3 model, loc method) {
-    // get the source file of the method
-    loc file = model.resource[method];
+int approxCyclomatic(Declaration methodAST) {
+    int cc = 1; 
+    
+    visit (methodAST) {
+        case \if(_, _): cc += 1;
+        case \if(_, _, _): cc += 1;
+        case \conditional(_, _, _): cc += 1;
+        case \while(_, _): cc += 1;
+        case \do(_, _): cc += 1;
+        case \for(_, _, _, _): cc += 1;
+        case \for(_, _, _): cc += 1;
+        case \foreach(_, _, _): cc += 1;
+        case \case(_): cc += 1;
+        case \catch(_, _): cc += 1;
+        case \infix(_, "&&", _): cc += 1;
+        case \infix(_, "||", _): cc += 1;
+    }
+    return cc;
+}
 
-    set[Declaration] decls = createAstsFromFile(file); // parse the file AST
+public void UnitMetrics(loc cl) {
+    set[Declaration] asts = createAstsFromDirectory(cl, true);
 
-    int cc = 1; // minimum cyclomatic complexity
+    map[str, int] complexitySum = ("simple": 0, "moderate": 0, "high": 0, "very high": 0);
+    int totalComplexity = 0;
 
-    // visit the AST declarations
-    visit (decls) {
-        // match the method declaration by name
-        case \method(_, name, _, body): if (name == lastSegment(method)) {
-            visit(body) {
-                case \if(_, _, _): cc = cc + 1;
-                case \for(_, _, _): cc = cc + 1;
-                case \for(_, _, _, _): cc = cc + 1;
-                case \foreach(_, _, _): cc = cc + 1;
-                case \while(_, _): cc = cc + 1;
-                case \doWhile(_, _): cc = cc + 1;
-                case \catch(_, _): cc = cc + 1;
-                case \case(_, _): cc = cc + 1;
-                case \conditional(_, _, _): cc = cc + 1; // ternary operator
-                case \binary(_, "&&", _, _): cc = cc + 1;
-                case \binary(_, "||", _, _): cc = cc + 1;
+    visit (asts) {
+        case Declaration d: {
+            // Check if this declaration is a method or constructor
+            if (d is \method || d is \constructor) {
+                int cc = approxCyclomatic(d);
+                str r = riskClass(cc);
+                
+                complexitySum[r] += cc;
+                totalComplexity += cc;
             }
         }
     }
 
-    return cc;
-} 
-
-
-public void printUnitMetrics() {
-    loc project = |file:///smallsql/|;
-    M3 model = createM3FromDirectory(project);
-
-    // all units (methods + constructors)
-    set[loc] units =
-    {
-        y | <x,y> <- model.containment,
-             x.scheme == "java+class",
-             (y.scheme == "java+method" || y.scheme == "java+constructor")
-    };
-
-    map[str,int] unitCount = ();       // number of units per risk
-    map[str,int] complexitySum = ();   // sum of CC per risk
-
-    for (loc u <- units) {
-        int cc = approxCyclomatic(u);
-        str r = riskClass(cc);
-
-        unitCount[r] = (unitCount[r] ? 0) + 1;
-        complexitySum[r] = (complexitySum[r] ? 0) + cc;
-    }
-
-    int totalUnits = size(units);
-    int totalComplexity = sum({ complexitySum[r] | r <- complexitySum });
-
-    println("unit size:");
-    for (str r <- ["simple","moderate","high","very high"]) {
-        int p = totalUnits == 0 ? 0 : ((unitCount[r] ? 0) * 100 / totalUnits);
+    println("Unit Complexity Distribution:");
+    for (str r <- ["simple", "moderate", "high", "very high"]) {
+        real p = totalComplexity == 0 ? 0.0 : (complexitySum[r] * 100.0 / totalComplexity);
         println("* <r>: <p>%");
-    }
-
-    println("unit complexity:");
-    for (str r <- ["simple","moderate","high","very high"]) {
-        int p = totalComplexity == 0 ? 0 : ((complexitySum[r] ? 0) * 100 / totalComplexity);
-        println("* <r>: <p>%");
-    }
+    }  
 }
 
-
+//aanroepen in terminal met
+//    loc project = |file:///smallsql/|;
+//    M3 model = createM3FromDirectory(project);
+//    linesOfCode(project, model); 
+//    numberOfUnits(project, model);
 
 // --------------------------------------------------------------------------
 // visualisatie
