@@ -151,33 +151,45 @@ list[str] trimmedLines(loc f) {
 
 public void duplicationCounter(loc cl, M3 model) {
     set[loc] javaFiles = files(model);
-    list[str] allLines = [ *trimmedLines(f) | f <- javaFiles ];
-    int n = size(allLines);
 
-    if (n < 6) {
-        println("File size <n> is too small for duplication analysis.");
-        return;
-    }
+    int totalLines = 0;
+    set[str] duplicatedLines = {};
+    // Map from block (6 lines joined) to all its occurrences
+    map[str, list[tuple[loc,int]]] blocks = ();
 
-    map[list[str], int] blockCounts = ();
+    // 1. Collect blocks
+    for (loc f <- javaFiles) {
+        list[str] lines = trimmedLines(f);
+        totalLines += size(lines);
 
-    // Count blocks
-    for (int i <- [0 .. n - 6]) {
-        list[str] window = allLines[i .. i + 6];
-        blockCounts[window] = (blockCounts[window]?0) + 1;
-    }
+        for (int i <- [0 .. size(lines) - 6]) {
+            list[str] blockLines = lines[i .. i + 6];
 
-    // Track duplicated line indices
-    set[int] dupIndices = {};
+            str block = "";
+            for (str l <- blockLines) {
+                block += l + "\n";
+            }
 
-    for (int i <- [0 .. n - 6]) {
-        if (blockCounts[allLines[i .. i + 6]] > 1) {
-            dupIndices += { j | j <- [i .. i + 5] };
+            blocks[block] ?= [];
+            blocks[block] += <f, i>;
         }
     }
 
-    int duplicatedLineCount = size(dupIndices);
-    real percentage = (toReal(duplicatedLineCount) / toReal(n)) * 100.0;
+    // 2. Identify duplicated blocks
+    for (str block <- blocks) {
+        if (size(blocks[block]) > 1) {
+            // block is duplicated
+            list[str] lines = split(block, "\n");
+            duplicatedLines += toSet(lines);
+        }
+    }
+
+    // 3. Compute percentage
+    int duplicatedLineCount = size(duplicatedLines);
+    real percentage =
+        (totalLines == 0)
+        ? 0.0
+        : (duplicatedLineCount * 100.0) / totalLines;
 
     println("Duplication Percentage: <percentage>%");
 }
