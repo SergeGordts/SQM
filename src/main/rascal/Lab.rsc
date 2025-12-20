@@ -18,25 +18,22 @@ import Content;
 
 // 1 --> volume: Lines of code
 
-public void linesOfCode(loc cl, M3 model) {
+public str linesOfCode(loc cl, M3 model) {
    set[loc] javaFiles = files(model);
    int totalLines = 0;
    for (loc f <- javaFiles) {
         totalLines += size(readFileLines(f));
         }
-    println("SmallSQL");
-    println("---------");
-    println("lines of code: <totalLines>");
+    str output = "lines of code: <totalLines>\n";
+    return output;
 }
 
 // 2 ---> number of units (a unit in java is a method)
-public void numberOfUnits(loc cl, M3 model) {
+public str numberOfUnits(loc cl, M3 model) {
    list[loc] allMethods = [l | l <- methods(model)];
    int totalUnits = size(allMethods);
-
-   println("SmallSQL");
-   println("---------");
-   println("Number of units (methods): <totalUnits>");
+   str output = "number of units: <totalUnits>\n";
+   return output;
 }
 
 // 3 --> unit size: The article "Deriving Metric Thresholds from Benchmark Data" by Visser et al
@@ -51,7 +48,7 @@ public void numberOfUnits(loc cl, M3 model) {
 //they pool measurement data across many systems (100 projects), aggregates relative size weighting (LOC) so larger units contribute proportionally,
 //chooses quantiles (70%, 80%, 90%) that emphasize meaningful code volume splits, and rounds values to practical integer thresholds. 
 
-public void unitSizeDistribution(loc cl, M3 model) {
+public str unitSizeDistribution(loc cl, M3 model) {
     list[loc] allMethods = [l | l <- methods(model)];
     list[int] methodSizes = [size(readFileLines(m)) | m <- allMethods];
 
@@ -75,13 +72,13 @@ public void unitSizeDistribution(loc cl, M3 model) {
     int totalLOC = sum(methodSizes);
 
     if (totalLOC > 0) {
-        println("unit size:");
-        println(" simple: <100.0 * simple / totalLOC>%");
-        println(" moderate: <100.0 * moderate / totalLOC>%");
-        println(" high: <100.0 * high / totalLOC>%");
-        println(" very high: <100.0 * veryHigh / totalLOC>%");
-    } else {
-        println("No methods found to analyze.");
+        str output = "unit size: \n";
+        output += " simple: <100.0 * simple / totalLOC>% \n";
+        output += " moderate: <100.0 * moderate / totalLOC>% \n";
+        output += " high: <100.0 * high / totalLOC>% \n";
+        output += " very high: <100.0 * veryHigh / totalLOC>% \n";
+        
+        return output; 
     }
 }
 
@@ -116,7 +113,7 @@ int approxCyclomatic(Declaration methodAST) {
     return cc;
 }
 
-public void unitCCMetrics(loc cl) {
+public str unitCCMetrics(loc cl) {
     set[Declaration] asts = createAstsFromDirectory(cl, true);
 
     map[str, int] complexitySum = ("simple": 0, "moderate": 0, "high": 0, "very high": 0);
@@ -135,11 +132,12 @@ public void unitCCMetrics(loc cl) {
         }
     }
 
-    println("Unit Complexity Distribution:");
-    for (str r <- ["simple", "moderate", "high", "very high"]) {
+    str output = "unit complexity:\n";
+    for (str r <- ["simple","moderate","high","very high"]) {
         real p = totalComplexity == 0 ? 0.0 : (complexitySum[r] * 100.0 / totalComplexity);
-        println("* <r>: <p>%");
-    }  
+        output += "* <r>: <p>%\n";
+    }
+    return output;  
 }
 
 //5 --> Duplication: the percentage of all code that occurs more than once in equal code blocks of at least 6 lines.
@@ -149,57 +147,82 @@ list[str] trimmedLines(loc f) {
     return [ trim(l) | l <- readFileLines(f), trim(l) != "" ];
 }
 
-public void duplicationCounter(loc cl, M3 model) {
+public str duplicationCounter(loc cl, M3 model) {
     set[loc] javaFiles = files(model);
 
     int totalLines = 0;
     set[str] duplicatedLines = {};
-    // Map from block (6 lines joined) to all its occurrences
+    // Map from block (6 lines joined) to all its occurrences (location and starting index)
     map[str, list[tuple[loc,int]]] blocks = ();
 
-    // 1. Collect blocks
+    // Collect blocks consisting of 6 lines
     for (loc f <- javaFiles) {
+        //reads the trimmedlines and adds them to the lines list accessed by index
         list[str] lines = trimmedLines(f);
         totalLines += size(lines);
 
+        //sliding window that reads 6 lines and turns them into a block
         for (int i <- [0 .. size(lines) - 6]) {
             list[str] blockLines = lines[i .. i + 6];
 
             str block = "";
             for (str l <- blockLines) {
+                //"\n" preserves the lines
                 block += l + "\n";
             }
 
+            //map where the string of the block is the index to a list (not unique) of location and index tuples
+            //so if the string appears twice, it will show twice in the map
             blocks[block] ?= [];
             blocks[block] += <f, i>;
         }
     }
 
-    // 2. Identify duplicated blocks
+    // Identify duplicated blocks
     for (str block <- blocks) {
         if (size(blocks[block]) > 1) {
-            // block is duplicated
             list[str] lines = split(block, "\n");
+            //toSet keeps unique lines that appear in duplicated blocks
             duplicatedLines += toSet(lines);
         }
     }
 
-    // 3. Compute percentage
+    // Compute percentage
     int duplicatedLineCount = size(duplicatedLines);
     real percentage =
         (totalLines == 0)
         ? 0.0
         : (duplicatedLineCount * 100.0) / totalLines;
 
-    println("Duplication Percentage: <percentage>%");
+   str output = "duplication: <percentage>%\n";
+   return output;
 }
 
 //6 --> generation of text file
 
+public void generateQualityReport(loc cl, M3 model) {
+    str projectName = cl.file;
+    
+    loc reportFile = cl + "report_<projectName>.txt";
+    
+    str reportContent = "Software Quality Report for: <projectName>\n";
+    reportContent += "==========================================\n\n";
+    
+    reportContent += linesOfCode(cl, model) + "\n";
+    reportContent += numberOfUnits(cl, model) + "\n";
+    reportContent += unitSizeDistribution(cl, model) + "\n";
+    reportContent += unitCCMetrics(cl) + "\n";
+    reportContent += duplicationCounter(cl, model) + "\n";
+    
+    writeFile(reportFile, reportContent);
+    
+    println("Report generated successfully at: <reportFile>");
+}
+
 //aanroepen in terminal met
 //    loc project = |file:///smallsql/|;
 //    M3 model = createM3FromDirectory(project);
-//    linesOfCode(project, model); 
+//    linesOfCode(project, model);
 //    numberOfUnits(project, model);
 
 //Todo: check met rubric & check met uitleg gegeven tijdens de online les
