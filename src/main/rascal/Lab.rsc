@@ -8,6 +8,7 @@ import List;
 import Map;
 import Relation;
 import Set;
+import String;
 import analysis::graphs::Graph;
 import lang::java::m3::Core;
 import lang::java::m3::AST;
@@ -15,7 +16,7 @@ import vis::Charts;
 import vis::Graphs;
 import Content;
 
-// volume: Lines of code
+// 1 --> volume: Lines of code
 
 public void linesOfCode(loc cl, M3 model) {
    set[loc] javaFiles = files(model);
@@ -28,7 +29,7 @@ public void linesOfCode(loc cl, M3 model) {
     println("lines of code: <totalLines>");
 }
 
-// number of units (a unit in java is a method)
+// 2 ---> number of units (a unit in java is a method)
 public void numberOfUnits(loc cl, M3 model) {
    list[loc] allMethods = [l | l <- methods(model)];
    int totalUnits = size(allMethods);
@@ -38,10 +39,11 @@ public void numberOfUnits(loc cl, M3 model) {
    println("Number of units (methods): <totalUnits>");
 }
 
-// unit size: from "Deriving Metric Thresholds from Benchmark Data" by Visser et al
-// This article discusses a method that determines metric thresholds empirically from measurement data.
-// Table IV in this article shows the empirically derived Thresholds for Unit Size (Java and other OO systems)
-// The thresholds are based on benchmarked quantiles of the distribution of unit size (LOC per method). The authors use the 70th, 80th, and 90th percentiles as thresholds that capture meaningful variation while weighting by code volume across many systems.
+// 3 --> unit size: The article "Deriving Metric Thresholds from Benchmark Data" by Visser et al
+// discusses a method that determines metric thresholds empirically from measurement data.
+// Table IV in this article shows the empirically derived Thresholds for Unit Size for Java and other OO systems.
+// The thresholds are based on benchmarked quantiles of the distribution of unit size (LOC per method). 
+// The authors use the 70th, 80th, and 90th percentiles as thresholds that capture meaningful variation while weighting by code volume across many systems.
 // | Metric                       | 70%    | 80%    | 90%    |
 // Unit size (LOC per unit)       | 30     | 44     | 74     |
 // so Simple is ≤ 30, Moderate > 30 and ≤ 44, High > 44 and ≤ 74 and Very high > 74                                 
@@ -83,7 +85,7 @@ public void unitSizeDistribution(loc cl, M3 model) {
     }
 }
 
-// cyclomatic complexity of each unit: 1-10 is simple, 11-20 more complex, moderate risk, 
+// 4 --> cyclomatic complexity of each unit: 1-10 is simple, 11-20 more complex, moderate risk, 
 // 21-50 complex, high risk, > 50 untestable, very high risk
 
 str riskClass(int cc) {
@@ -114,7 +116,7 @@ int approxCyclomatic(Declaration methodAST) {
     return cc;
 }
 
-public void UnitMetrics(loc cl) {
+public void unitCCMetrics(loc cl) {
     set[Declaration] asts = createAstsFromDirectory(cl, true);
 
     map[str, int] complexitySum = ("simple": 0, "moderate": 0, "high": 0, "very high": 0);
@@ -140,22 +142,64 @@ public void UnitMetrics(loc cl) {
     }  
 }
 
+//5 --> Duplication: the percentage of all code that occurs more than once in equal code blocks of at least 6 lines.
+// Apart from removing leading spaces, the duplication we measure is an exact string matching duplication
+
+list[str] trimmedLines(loc f) {
+    return [ trim(l) | l <- readFileLines(f), trim(l) != "" ];
+}
+
+public void duplicationCounter(loc cl, M3 model) {
+    set[loc] javaFiles = files(model);
+    list[str] allLines = [ *trimmedLines(f) | f <- javaFiles ];
+    int n = size(allLines);
+
+    if (n < 6) {
+        println("File size <n> is too small for duplication analysis.");
+        return;
+    }
+
+    map[list[str], int] blockCounts = ();
+
+    // Count blocks
+    for (int i <- [0 .. n - 6]) {
+        list[str] window = allLines[i .. i + 6];
+        blockCounts[window] = (blockCounts[window]?0) + 1;
+    }
+
+    // Track duplicated line indices
+    set[int] dupIndices = {};
+
+    for (int i <- [0 .. n - 6]) {
+        if (blockCounts[allLines[i .. i + 6]] > 1) {
+            dupIndices += { j | j <- [i .. i + 5] };
+        }
+    }
+
+    int duplicatedLineCount = size(dupIndices);
+    real percentage = (toReal(duplicatedLineCount) / toReal(n)) * 100.0;
+
+    println("Duplication Percentage: <percentage>%");
+}
+
+//6 --> generation of text file
+
 //aanroepen in terminal met
 //    loc project = |file:///smallsql/|;
 //    M3 model = createM3FromDirectory(project);
 //    linesOfCode(project, model); 
 //    numberOfUnits(project, model);
 
-// --------------------------------------------------------------------------
-// visualisatie
+//Todo: check met rubric & check met uitleg gegeven tijdens de online les
 
-public Content exercise10a() {
-   loc project = |file:///SQM/JabberPoint/|;
-   M3 model = createM3FromDirectory(project);
+// --------------------------------------------------------------------------
+// visualisatie voor later
+
+public Content visualizeA(loc cl, M3 model) {
    rel[str, num] regels = { <l.file, a> | <l,a> <- toRel(regelsPerBestand(model)) };
    return barChart(sort(regels, aflopend), title="Regels per Javabestand");
 }
 
-public Content exercise10b() {
+public Content visualizeB() {
    return graph(gebruikt,title="Componenten", \layout=defaultGridLayout(rows=2,cols=3));
 }
