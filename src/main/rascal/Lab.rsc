@@ -15,17 +15,18 @@ import lang::java::m3::AST;
 import vis::Charts;
 import vis::Graphs;
 import Content;
+import Scoring::Volume;
+import Scoring::UnitSize;
 
 // 1 --> volume: Lines of code
 
-public str linesOfCode(loc cl, M3 model) {
+public int linesOfCode(loc cl, M3 model) {
    set[loc] javaFiles = files(model);
    int totalLines = 0;
    for (loc f <- javaFiles) {
         totalLines += size(readFileLines(f));
         }
-    str output = "lines of code: <totalLines>\n";
-    return output;
+    return totalLines;
 }
 
 // 2 ---> number of units (a unit in java is a method)
@@ -48,7 +49,7 @@ public str numberOfUnits(loc cl, M3 model) {
 //they pool measurement data across many systems (100 projects), aggregates relative size weighting (LOC) so larger units contribute proportionally,
 //chooses quantiles (70%, 80%, 90%) that emphasize meaningful code volume splits, and rounds values to practical integer thresholds. 
 
-public str unitSizeDistribution(loc cl, M3 model) {
+public tuple[str, tuple[int, int, int]] unitSizeDistribution(loc cl, M3 model) {
     list[loc] allMethods = [l | l <- methods(model)];
     list[int] methodSizes = [size(readFileLines(m)) | m <- allMethods];
 
@@ -78,7 +79,7 @@ public str unitSizeDistribution(loc cl, M3 model) {
         output += " high: <100.0 * high / totalLOC>% \n";
         output += " very high: <100.0 * veryHigh / totalLOC>% \n";
         
-        return output; 
+        return <output, <moderate, high, veryHigh>>; 
     }
 }
 
@@ -208,16 +209,28 @@ public void generateQualityReport(loc cl, M3 model) {
     str reportContent = "Software Quality Report for: <projectName>\n";
     reportContent += "==========================================\n\n";
     
-    reportContent += linesOfCode(cl, model) + "\n";
+    int totalLines = linesOfCode(cl, model);
+    reportContent += "lines of code: <totalLines>\n";
     reportContent += numberOfUnits(cl, model) + "\n";
-    reportContent += unitSizeDistribution(cl, model) + "\n";
+    tuple[str output, tuple[int,int,int] distribution] unitSize = unitSizeDistribution(cl, model);
+    reportContent += unitSize.output;
     reportContent += unitCCMetrics(cl) + "\n";
     reportContent += duplicationCounter(cl, model) + "\n";
-    
+
+    reportContent += "volume score: <calculateVolumeRank(totalLines)>\n";
+    reportContent += "unit size score: <calculateUnitsizeRank(unitSize.distribution)>\n";
+    println(unitSize.distribution);
     writeFile(reportFile, reportContent);
     
     println("Report generated successfully at: <reportFile>");
 }
+
+//shortcut om smallsql te runnen 
+//public void runProject1(){
+//    loc project = |file:///SmallSql/|;
+//    M3 model = createM3FromDirectory(project);
+//    generateQualityReport(project, model);
+//}
 
 //aanroepen in terminal met
 //    loc project = |file:///smallsql/|;
