@@ -221,6 +221,7 @@ public void generateQualityReport(loc cl, M3 model) {
 
 //aanroepen in terminal met
 //    loc project = |file:///smallsql/|;
+//    loc project2 = |file:///hsqldb/|;
 //    M3 model = createM3FromDirectory(project);
 //    linesOfCode(project, model);
 //    numberOfUnits(project, model);
