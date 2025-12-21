@@ -29,7 +29,7 @@ public int linesOfCode(loc cl, M3 model) {
         
         int codeLines = size({ l | str l <- lines, 
                            !(/^\s*$/ := l), //not blank
-                           !(/^\s*\/\// := l), //noy single line comment //
+                           !(/^\s*\/\// := l), //not single line comment //
                            !(/^\s*\/\*/ := l), //not start of block /*
                            !(/^\s*\*/ := l),   //not middle of block 
                            !(/^\s*\*\/$/ := l) //not end of block
@@ -48,6 +48,7 @@ public str numberOfUnits(loc cl, M3 model) {
    return output;
 }
 
+
 // 3 --> unit size: The article "Deriving Metric Thresholds from Benchmark Data" by Visser et al
 // discusses a method that determines metric thresholds empirically from measurement data.
 // Table IV in this article shows the empirically derived Thresholds for Unit Size for Java and other OO systems.
@@ -62,7 +63,18 @@ public str numberOfUnits(loc cl, M3 model) {
 
 public tuple[str, tuple[int, int, int]] unitSizeDistribution(loc cl, M3 model) {
     list[loc] allMethods = [l | l <- methods(model)];
-    list[int] methodSizes = [size(readFileLines(m)) | m <- allMethods];
+    list[int] methodSizes = [
+        size({
+            l
+            | str l <- readFileLines(m),
+              !(/^\s*$/ := l),       // not blank
+              !(/^\s*\/\// := l),    // not single-line comment //
+              !(/^\s*\/\*/ := l),    // not start of block /*
+              !(/^\s*\*/ := l),      // not middle of block *
+              !(/^\s*\*\/$/ := l)    // not end of block */
+        }) 
+        | m <- allMethods
+    ];
 
     int simple = 0;
     int moderate = 0;
@@ -248,6 +260,13 @@ public void runlinesOfCode(){
     M3 model = createM3FromDirectory(project);
     println(linesOfCode(project, model));
 }
+
+public void runUnitSizeDistribution(){
+    loc project = |file:///SmallSql/|;
+    M3 model = createM3FromDirectory(project);
+    println(unitSizeDistribution(project, model));
+}
+
 
 //aanroepen in terminal met
 //    loc project = |file:///smallsql/|;
