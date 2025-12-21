@@ -17,6 +17,7 @@ import vis::Graphs;
 import Content;
 import Scoring::Volume;
 import Scoring::UnitSize;
+import Scoring::Complexity;
 
 // 1 --> volume: Lines of code, skip blank lines and comments
 
@@ -125,7 +126,7 @@ int approxCyclomatic(Declaration methodAST) {
     return cc;
 }
 
-public str unitCCMetrics(loc cl) {
+public tuple[map[str, int], int] unitCCMetrics(loc cl) {
     set[Declaration] asts = createAstsFromDirectory(cl, true);
 
     map[str, int] complexitySum = ("simple": 0, "moderate": 0, "high": 0, "very high": 0);
@@ -149,7 +150,7 @@ public str unitCCMetrics(loc cl) {
         real p = totalComplexity == 0 ? 0.0 : (complexitySum[r] * 100.0 / totalComplexity);
         output += "* <r>: <p>%\n";
     }
-    return output;  
+    return <complexitySum, totalComplexity>;  
 }
 
 //5 --> Duplication: the percentage of all code that occurs more than once in equal code blocks of at least 6 lines.
@@ -225,12 +226,16 @@ public void generateQualityReport(loc cl, M3 model) {
     reportContent += numberOfUnits(cl, model) + "\n";
     tuple[str output, tuple[int,int,int] distribution] unitSize = unitSizeDistribution(cl, model);
     reportContent += unitSize.output;
-    reportContent += unitCCMetrics(cl) + "\n";
+    tuple[map[str, int] distribution, int totalComplexity] complexity = unitCCMetrics(cl);
+    reportContent += "unit complexity:\n";
+    for (str r <- ["simple","moderate","high","very high"]) {
+        real p = complexity.totalComplexity == 0 ? 0.0 : (complexity.distribution[r] * 100.0 / complexity.totalComplexity );
+        reportContent += "* <r>: <p>%\n";
+    }
     reportContent += duplicationCounter(cl, model) + "\n";
-
     reportContent += "volume score: <calculateVolumeRank(totalLines)>\n";
     reportContent += "unit size score: <calculateUnitsizeRank(unitSize.distribution)>\n";
-    println(unitSize.distribution);
+    reportContent += "complexity score: <calculateComplexityRank(<complexity.distribution["moderate"], complexity.distribution["high"], complexity.distribution["very high"]>)>\n";
     writeFile(reportFile, reportContent);
     
     println("Report generated successfully at: <reportFile>");
