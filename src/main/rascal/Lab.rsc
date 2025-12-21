@@ -18,6 +18,7 @@ import Content;
 import Scoring::Volume;
 import Scoring::UnitSize;
 import Scoring::Complexity;
+import Scoring::Duplication;
 
 // 1 --> volume: Lines of code, skip blank lines and comments
 
@@ -160,7 +161,7 @@ list[str] trimmedLines(loc f) {
     return [ trim(l) | l <- readFileLines(f), trim(l) != "" ];
 }
 
-public str duplicationCounter(loc cl, M3 model) {
+public real duplicationCounter(loc cl, M3 model) {
     set[loc] javaFiles = files(model);
 
     int totalLines = 0;
@@ -207,8 +208,7 @@ public str duplicationCounter(loc cl, M3 model) {
         ? 0.0
         : (duplicatedLineCount * 100.0) / totalLines;
 
-   str output = "duplication: <percentage>%\n";
-   return output;
+   return percentage;
 }
 
 //6 --> generation of text file
@@ -232,10 +232,12 @@ public void generateQualityReport(loc cl, M3 model) {
         real p = complexity.totalComplexity == 0 ? 0.0 : (complexity.distribution[r] * 100.0 / complexity.totalComplexity );
         reportContent += "* <r>: <p>%\n";
     }
-    reportContent += duplicationCounter(cl, model) + "\n";
+    real duplicationFactor = duplicationCounter(cl, model);
+    reportContent += "duplication: <duplicationFactor>%\n";
     reportContent += "volume score: <calculateVolumeRank(totalLines)>\n";
     reportContent += "unit size score: <calculateUnitsizeRank(unitSize.distribution)>\n";
-    reportContent += "complexity score: <calculateComplexityRank(<complexity.distribution["moderate"], complexity.distribution["high"], complexity.distribution["very high"]>)>\n";
+    reportContent += "unit complexity score: <calculateComplexityRank(<complexity.distribution["moderate"], complexity.distribution["high"], complexity.distribution["very high"]>)>\n";
+    reportContent += "duplication score: <calculateDuplicationRank(duplicationFactor)>\n";
     writeFile(reportFile, reportContent);
     
     println("Report generated successfully at: <reportFile>");
@@ -243,7 +245,7 @@ public void generateQualityReport(loc cl, M3 model) {
 
 //shortcut om smallsql te runnen 
 public void runProject1(){
-    loc project = |file:///SmallSql/|;
+    loc project = |file:///Users/tibovanhoutte/Documents/SmallSql/|;
     M3 model = createM3FromDirectory(project);
     generateQualityReport(project, model);
 }
