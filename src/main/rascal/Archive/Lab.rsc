@@ -1,3 +1,5 @@
+module LabV2
+
 // Uitwerking van de Rascal oefeningen met VSCode (inwerkopdracht) 
 // Open Universiteit, november 2023
 
@@ -18,25 +20,15 @@ import Content;
 import Scoring::Volume;
 import Scoring::UnitSize;
 
-// 1 --> volume: Lines of code, skip blank lines and comments
+// 1 --> volume: Lines of code
+
 
 public int linesOfCode(loc cl, M3 model) {
-    set[loc] javaFiles = files(model);
-    int totalLines = 0;
-    
-    for (loc f <- javaFiles) {
-        list[str] lines = readFileLines(f);
-        
-        int codeLines = size({ l | str l <- lines, 
-                           !(/^\s*$/ := l), 
-                           !(/^\s*\/\// := l),
-                           !(/^\s*\/\*/ := l),
-                           !(/^\s*\*/ := l),
-                           !(/^\s*\*\/$/ := l) 
-                     });
-
-        totalLines += codeLines;
-    }
+   set[loc] javaFiles = files(model);
+   int totalLines = 0;
+   for (loc f <- javaFiles) {
+        totalLines += size(readFileLines(f));
+        }
     return totalLines;
 }
 
@@ -237,17 +229,11 @@ public void generateQualityReport(loc cl, M3 model) {
 }
 
 //shortcut om smallsql te runnen 
-public void runProject1(){
-    loc project = |file:///SmallSql/|;
-    M3 model = createM3FromDirectory(project);
-    generateQualityReport(project, model);
-}
-
-public void runlinesOfCode(){
-    loc project = |file:///SmallSql/|;
-    M3 model = createM3FromDirectory(project);
-    println(linesOfCode(project, model));
-}
+//public void runProject1(){
+//    loc project = |file:///SmallSql/|;
+//    M3 model = createM3FromDirectory(project);
+//    generateQualityReport(project, model);
+//}
 
 //aanroepen in terminal met
 //    loc project = |file:///smallsql/|;
