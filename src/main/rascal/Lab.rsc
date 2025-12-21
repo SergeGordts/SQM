@@ -28,11 +28,11 @@ public int linesOfCode(loc cl, M3 model) {
         list[str] lines = readFileLines(f);
         
         int codeLines = size({ l | str l <- lines, 
-                           !(/^\s*$/ := l), 
-                           !(/^\s*\/\// := l),
-                           !(/^\s*\/\*/ := l),
-                           !(/^\s*\*/ := l),
-                           !(/^\s*\*\/$/ := l) 
+                           !(/^\s*$/ := l), //not blank
+                           !(/^\s*\/\// := l), //noy single line comment //
+                           !(/^\s*\/\*/ := l), //not start of block /*
+                           !(/^\s*\*/ := l),   //not middle of block 
+                           !(/^\s*\*\/$/ := l) //not end of block
                      });
 
         totalLines += codeLines;
