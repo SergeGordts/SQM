@@ -19,6 +19,7 @@ import Scoring::Volume;
 import Scoring::UnitSize;
 import Scoring::Complexity;
 import Scoring::Duplication;
+import Scoring::MaintainabilityRanks;
 
 // 1 --> volume: Lines of code, skip blank lines and comments
 
@@ -234,10 +235,23 @@ public void generateQualityReport(loc cl, M3 model) {
     }
     real duplicationFactor = duplicationCounter(cl, model);
     reportContent += "duplication: <duplicationFactor>%\n";
-    reportContent += "volume score: <calculateVolumeRank(totalLines)>\n";
-    reportContent += "unit size score: <calculateUnitsizeRank(unitSize.distribution)>\n";
-    reportContent += "unit complexity score: <calculateComplexityRank(<complexity.distribution["moderate"], complexity.distribution["high"], complexity.distribution["very high"]>)>\n";
-    reportContent += "duplication score: <calculateDuplicationRank(duplicationFactor)>\n";
+
+    str volumeRank = calculateVolumeRank(totalLines);
+    reportContent += "volume score: <volumeRank>\n";
+    str unitSizeRank = calculateUnitsizeRank(unitSize.distribution);
+    reportContent += "unit size score: <unitSizeRank>\n";
+    str complexityRank = calculateComplexityRank(<complexity.distribution["moderate"], complexity.distribution["high"], complexity.distribution["very high"]>);
+    reportContent += "unit complexity score: <complexityRank>\n";
+    str duplicationRank = calculateDuplicationRank(duplicationFactor);
+    reportContent += "duplication score: <duplicationRank>\n";
+
+    str analysabilityRank = calculateAnalysabilityRank([volumeRank, unitSizeRank, duplicationRank]);
+    reportContent += "analysability score: <analysabilityRank>\n";
+    str changeabilityRank = calculateChangeabilityRank([complexityRank, duplicationRank]);
+    reportContent += "changeability score: <changeabilityRank>\n";
+    str testabilityRank = calculateTestabilityRank([complexityRank, unitSizeRank]);
+    reportContent += "testability score: <testabilityRank>\n";
+    reportContent += "mainainability score: <calculateMaintainabilityRank()>\n";
     writeFile(reportFile, reportContent);
     
     println("Report generated successfully at: <reportFile>");
@@ -245,7 +259,7 @@ public void generateQualityReport(loc cl, M3 model) {
 
 //shortcut om smallsql te runnen 
 public void runProject1(){
-    loc project = |file:///Users/tibovanhoutte/Documents/SmallSql/|;
+    loc project = |file:///SmallSql/|;
     M3 model = createM3FromDirectory(project);
     generateQualityReport(project, model);
 }

@@ -10,13 +10,17 @@ public str calculateComplexityRank(tuple[int moderate, int high, int veryHigh] c
     
     if (complexityDistribution.moderate >= Minus.moderate || complexityDistribution.high >= Minus.high || complexityDistribution.veryHigh >= Minus.veryHigh) {
 		return "--";
-	} else if (complexityDistribution.moderate >= Neutral.moderate || complexityDistribution.high >= Neutral.high || complexityDistribution.veryHigh >= Neutral.veryHigh) {
+	} 
+    else if (complexityDistribution.moderate >= Neutral.moderate || complexityDistribution.high >= Neutral.high || complexityDistribution.veryHigh >= Neutral.veryHigh) {
 		return "-";
-	} else if (complexityDistribution.moderate >= Plus.moderate || complexityDistribution.high >= Plus.high || complexityDistribution.veryHigh >= Plus.veryHigh) {
+	} 
+    else if (complexityDistribution.moderate >= Plus.moderate || complexityDistribution.high >= Plus.high || complexityDistribution.veryHigh >= Plus.veryHigh) {
 		return "o";
-	} else if (complexityDistribution.moderate >= PlusPlus.moderate || complexityDistribution.high >= PlusPlus.high || complexityDistribution.veryHigh >= PlusPlus.veryHigh) {
+	} 
+    else if (complexityDistribution.moderate >= PlusPlus.moderate || complexityDistribution.high >= PlusPlus.high || complexityDistribution.veryHigh >= PlusPlus.veryHigh) {
 		return "+";
-	} else {
+	} 
+    else {
 		return "++";
 	}
 }
