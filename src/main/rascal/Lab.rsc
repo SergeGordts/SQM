@@ -18,7 +18,7 @@ import Content;
 
 // 1 --> volume: Lines of code
 
-public str linesOfCode(loc cl, M3 model) {
+public str linesOfCode(loc cl, M3 model) { 
    set[loc] javaFiles = files(model);
    int totalLines = 0;
    for (loc f <- javaFiles) {
