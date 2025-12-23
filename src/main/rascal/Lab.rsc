@@ -18,6 +18,23 @@ import Content;
 import Scoring::Volume;
 import Scoring::UnitSize;
 
+// helper function
+str normalizeWhiteSpace(str s) {
+    return visit(s) {
+        case /\s+/ => " "
+    };
+}
+
+list[str] trimmedLines(loc f) { 
+    return [ trim(normalizeWhiteSpace(l)) | l <- readFileLines(f), 
+    !(/^\s*$/ := l),     
+    !(/^\s*\/\// := l),  
+    !(/^\s*\/\*/ := l),  
+    !(/^\s*\*/ := l),    
+    !(/^\s*\*\/$/ := l) 
+    ]; 
+}
+
 // 1 --> volume: Lines of code, skip blank lines and comments
 
 public int linesOfCode(loc cl, M3 model) {
@@ -27,20 +44,20 @@ public int linesOfCode(loc cl, M3 model) {
     for (loc f <- javaFiles) {
         list[str] lines = readFileLines(f);
         
-        int codeLines = size({ l | str l <- lines, 
+        int codeLines = size([ l | str l <- lines, 
                            !(/^\s*$/ := l), //not blank
                            !(/^\s*\/\// := l), //not single line comment //
                            !(/^\s*\/\*/ := l), //not start of block /*
                            !(/^\s*\*/ := l),   //not middle of block 
                            !(/^\s*\*\/$/ := l) //not end of block
-                     });
+                     ]);
 
         totalLines += codeLines;
     }
     return totalLines;
 }
 
-// 2 ---> number of units (a unit in java is a method)
+// 2 ---> number of units (a unit in java is a method). methods() is a core library function and includes constructors and initializers.
 public str numberOfUnits(loc cl, M3 model) {
    list[loc] allMethods = [l | l <- methods(model)];
    int totalUnits = size(allMethods);
@@ -52,7 +69,7 @@ public str numberOfUnits(loc cl, M3 model) {
 // 3 --> unit size: The article "Deriving Metric Thresholds from Benchmark Data" by Visser et al
 // discusses a method that determines metric thresholds empirically from measurement data.
 // Table IV in this article shows the empirically derived Thresholds for Unit Size for Java and other OO systems.
-// The thresholds are based on benchmarked quantiles of the distribution of unit size (LOC per method). 
+// The thresholds are based on benchmarked quantiles of the distribution of unit size (LOC per method, exlcuding comments and balnk lines via a regex). 
 // The authors use the 70th, 80th, and 90th percentiles as thresholds that capture meaningful variation while weighting by code volume across many systems.
 // | Metric                       | 70%    | 80%    | 90%    |
 // Unit size (LOC per unit)       | 30     | 44     | 74     |
@@ -61,10 +78,14 @@ public str numberOfUnits(loc cl, M3 model) {
 //they pool measurement data across many systems (100 projects), aggregates relative size weighting (LOC) so larger units contribute proportionally,
 //chooses quantiles (70%, 80%, 90%) that emphasize meaningful code volume splits, and rounds values to practical integer thresholds. 
 
+//during the online sessions in the course it was said that one could also choose the CC tresholhds, or the SIG/tüvit evaluation criteria
+//but since the author of the aforementioned article also is one of the creators of the SIG we opt for this one.
+
 public tuple[str, tuple[int, int, int]] unitSizeDistribution(loc cl, M3 model) {
     list[loc] allMethods = [l | l <- methods(model)];
     list[int] methodSizes = [
-        size({
+        //list allows non-unique lines
+        size([
             l
             | str l <- readFileLines(m),
               !(/^\s*$/ := l),       // not blank
@@ -72,7 +93,7 @@ public tuple[str, tuple[int, int, int]] unitSizeDistribution(loc cl, M3 model) {
               !(/^\s*\/\*/ := l),    // not start of block /*
               !(/^\s*\*/ := l),      // not middle of block *
               !(/^\s*\*\/$/ := l)    // not end of block */
-        }) 
+    ]) 
         | m <- allMethods
     ];
 
@@ -137,7 +158,7 @@ int approxCyclomatic(Declaration methodAST) {
     return cc;
 }
 
-public str unitCCMetrics(loc cl) {
+public str unitCCMetrics(loc cl, M3 model) {
     set[Declaration] asts = createAstsFromDirectory(cl, true);
 
     map[str, int] complexitySum = ("simple": 0, "moderate": 0, "high": 0, "very high": 0);
@@ -145,8 +166,8 @@ public str unitCCMetrics(loc cl) {
 
     visit (asts) {
         case Declaration d: {
-            // Check if this declaration is a method or constructor
-            if (d is \method || d is \constructor) {
+            // Check if this declaration is a method/constructor/initializer
+            if (d is \method || d is \constructor || d is \initializer ) {
                 int cc = approxCyclomatic(d);
                 str r = riskClass(cc);
                 
@@ -164,62 +185,41 @@ public str unitCCMetrics(loc cl) {
     return output;  
 }
 
-//5 --> Duplication: the percentage of all code that occurs more than once in equal code blocks of at least 6 lines.
-// Apart from removing leading spaces, the duplication we measure is an exact string matching duplication
-
-list[str] trimmedLines(loc f) {
-    return [ trim(l) | l <- readFileLines(f), trim(l) != "" ];
-}
+//5 --> Duplication: the percentage of all comment-free, normalized and leading spaces-free code that occurs more than once in equal code blocks of at least 6 lines
 
 public str duplicationCounter(loc cl, M3 model) {
+    int totalLines = 0;
+    int duplicatedLinesCount = 0;
+    map[str, list[tuple[loc, int]]] blocks = ();
     set[loc] javaFiles = files(model);
 
-    int totalLines = 0;
-    set[str] duplicatedLines = {};
-    // Map from block (6 lines joined) to all its occurrences (location and starting index)
-    map[str, list[tuple[loc,int]]] blocks = ();
-
-    // Collect blocks consisting of 6 lines
+    // Map from block (6 lines) to a list of its physical locations <file, start_index> in the trimmed version
     for (loc f <- javaFiles) {
-        //reads the trimmedlines and adds them to the lines list accessed by index
         list[str] lines = trimmedLines(f);
-        totalLines += size(lines);
+        int n = size(lines);
+        totalLines += n;
 
-        //sliding window that reads 6 lines and turns them into a block
-        for (int i <- [0 .. size(lines) - 6]) {
-            list[str] blockLines = lines[i .. i + 6];
-
-            str block = "";
-            for (str l <- blockLines) {
-                //"\n" preserves the lines
-                block += l + "\n";
+        if (n >= 6) {
+            for (int i <- [0 .. n - 6]) {
+                list[str] blockLines = lines[i .. i + 6];
+                //preserving line structure by using intercalate from module List
+                str block = intercalate("\n", blockLines);
+                if (blocks[block]?) {
+                    blocks[block] += [<f, i>];
+                } else {
+                    blocks[block] = [<f, i>];
+                }
             }
-
-            //map where the string of the block is the index to a list (not unique) of location and index tuples
-            //so if the string appears twice, it will show twice in the map
-            blocks[block] ?= [];
-            blocks[block] += <f, i>;
         }
     }
 
-    // Identify duplicated blocks
-    for (str block <- blocks) {
-        if (size(blocks[block]) > 1) {
-            list[str] lines = split(block, "\n");
-            //toSet keeps unique lines that appear in duplicated blocks
-            duplicatedLines += toSet(lines);
-        }
+    // Count duplicates, each block except the initial one counts as 6 lines.
+       for (str blockKey <- blocks, size(blocks[blockKey]) > 1) {
+       duplicatedLinesCount += (size(blocks[blockKey])-1) * 6;
     }
+    real percentage = (totalLines == 0) ? 0.0 : (duplicatedLinesCount * 100.0) / totalLines;
 
-    // Compute percentage
-    int duplicatedLineCount = size(duplicatedLines);
-    real percentage =
-        (totalLines == 0)
-        ? 0.0
-        : (duplicatedLineCount * 100.0) / totalLines;
-
-   str output = "duplication: <percentage>%\n";
-   return output;
+    return "duplication: <percentage>% (<duplicatedLinesCount> duplicated lines out of <totalLines>)\n";
 }
 
 //6 --> generation of text file
@@ -237,7 +237,7 @@ public void generateQualityReport(loc cl, M3 model) {
     reportContent += numberOfUnits(cl, model) + "\n";
     tuple[str output, tuple[int,int,int] distribution] unitSize = unitSizeDistribution(cl, model);
     reportContent += unitSize.output;
-    reportContent += unitCCMetrics(cl) + "\n";
+    reportContent += unitCCMetrics(cl, model) + "\n";
     reportContent += duplicationCounter(cl, model) + "\n";
 
     reportContent += "volume score: <calculateVolumeRank(totalLines)>\n";
@@ -249,42 +249,40 @@ public void generateQualityReport(loc cl, M3 model) {
 }
 
 //shortcut om smallsql te runnen 
-public void runProject1(){
+public void runProjectSmallSql(){
     loc project = |file:///SmallSql/|;
     M3 model = createM3FromDirectory(project);
     generateQualityReport(project, model);
 }
 
+public void runProjectHyperSql(){
+    loc project = |file:///Hsqldb/|;
+    M3 model = createM3FromDirectory(project);
+    generateQualityReport(project, model);
+}
 public void runlinesOfCode(){
     loc project = |file:///SmallSql/|;
     M3 model = createM3FromDirectory(project);
     println(linesOfCode(project, model));
 }
 
-public void runUnitSizeDistribution(){
+public void runNumberOfUnits(){
     loc project = |file:///SmallSql/|;
     M3 model = createM3FromDirectory(project);
-    println(unitSizeDistribution(project, model));
+    println(numberOfUnits(project, model));
 }
 
-
-//aanroepen in terminal met
-//    loc project = |file:///smallsql/|;
-//    loc project2 = |file:///hsqldb/|;
-//    M3 model = createM3FromDirectory(project);
-//    linesOfCode(project, model);
-//    numberOfUnits(project, model);
-
-//Todo: check met rubric & check met uitleg gegeven tijdens de online les
-
-// --------------------------------------------------------------------------
-// visualisatie voor later
-
-public Content visualizeA(loc cl, M3 model) {
-   rel[str, num] regels = { <l.file, a> | <l,a> <- toRel(regelsPerBestand(model)) };
-   return barChart(sort(regels, aflopend), title="Regels per Javabestand");
+public void runUnitCCMetrics(){
+    loc project = |file:///SmallSql/|;
+    M3 model = createM3FromDirectory(project);
+    println(unitCCMetrics(project, model));
 }
 
-public Content visualizeB() {
-   return graph(gebruikt,title="Componenten", \layout=defaultGridLayout(rows=2,cols=3));
+public void runDuplicationCounter(){
+    loc project = |file:///SmallSql/|;
+    M3 model = createM3FromDirectory(project);
+    println(duplicationCounter(project, model));
 }
+
+//Todo: check met rubric
+
