@@ -17,6 +17,9 @@ import vis::Graphs;
 import Content;
 import Scoring::Volume;
 import Scoring::UnitSize;
+import Scoring::Complexity;
+import Scoring::Duplication;
+import Scoring::MaintainabilityRanks;
 
 // helper function
 str normalizeWhiteSpace(str s) {
@@ -182,11 +185,10 @@ public str unitCCMetrics(loc cl, M3 model) {
         real p = totalComplexity == 0 ? 0.0 : (complexitySum[r] * 100.0 / totalComplexity);
         output += "* <r>: <p>%\n";
     }
-    return output;  
+    return <complexitySum, totalComplexity>;  
 }
 
 //5 --> Duplication: the percentage of all comment-free, normalized and leading spaces-free code that occurs more than once in equal code blocks of at least 6 lines
-
 public str duplicationCounter(loc cl, M3 model) {
     int totalLines = 0;
     int duplicatedLinesCount = 0;
@@ -218,7 +220,6 @@ public str duplicationCounter(loc cl, M3 model) {
        duplicatedLinesCount += (size(blocks[blockKey])-1) * 6;
     }
     real percentage = (totalLines == 0) ? 0.0 : (duplicatedLinesCount * 100.0) / totalLines;
-
     return "duplication: <percentage>% (<duplicatedLinesCount> duplicated lines out of <totalLines>)\n";
 }
 
@@ -240,9 +241,22 @@ public void generateQualityReport(loc cl, M3 model) {
     reportContent += unitCCMetrics(cl, model) + "\n";
     reportContent += duplicationCounter(cl, model) + "\n";
 
-    reportContent += "volume score: <calculateVolumeRank(totalLines)>\n";
-    reportContent += "unit size score: <calculateUnitsizeRank(unitSize.distribution)>\n";
-    println(unitSize.distribution);
+    str volumeRank = calculateVolumeRank(totalLines);
+    reportContent += "volume score: <volumeRank>\n";
+    str unitSizeRank = calculateUnitsizeRank(unitSize.distribution);
+    reportContent += "unit size score: <unitSizeRank>\n";
+    str complexityRank = calculateComplexityRank(<complexity.distribution["moderate"], complexity.distribution["high"], complexity.distribution["very high"]>);
+    reportContent += "unit complexity score: <complexityRank>\n";
+    str duplicationRank = calculateDuplicationRank(duplicationFactor);
+    reportContent += "duplication score: <duplicationRank>\n";
+
+    str analysabilityRank = calculateAnalysabilityRank([volumeRank, unitSizeRank, duplicationRank]);
+    reportContent += "analysability score: <analysabilityRank>\n";
+    str changeabilityRank = calculateChangeabilityRank([complexityRank, duplicationRank]);
+    reportContent += "changeability score: <changeabilityRank>\n";
+    str testabilityRank = calculateTestabilityRank([complexityRank, unitSizeRank]);
+    reportContent += "testability score: <testabilityRank>\n";
+    reportContent += "mainainability score: <calculateMaintainabilityRank()>\n";
     writeFile(reportFile, reportContent);
     
     println("Report generated successfully at: <reportFile>");

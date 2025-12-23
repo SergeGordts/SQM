@@ -10,13 +10,17 @@ public str calculateUnitsizeRank(tuple[int moderate, int high, int veryHigh] uni
     
     if (unitSizeDistribution.moderate >= Minus.moderate || unitSizeDistribution.high >= Minus.high || unitSizeDistribution.veryHigh >= Minus.veryHigh) {
 		return "--";
-	} else if (unitSizeDistribution.moderate >= Neutral.moderate || unitSizeDistribution.high >= Neutral.high || unitSizeDistribution.veryHigh >= Neutral.veryHigh) {
+	} 
+	else if (unitSizeDistribution.moderate >= Neutral.moderate || unitSizeDistribution.high >= Neutral.high || unitSizeDistribution.veryHigh >= Neutral.veryHigh) {
 		return "-";
-	} else if (unitSizeDistribution.moderate >= Plus.moderate || unitSizeDistribution.high >= Plus.high || unitSizeDistribution.veryHigh >= Plus.veryHigh) {
+	} 
+	else if (unitSizeDistribution.moderate >= Plus.moderate || unitSizeDistribution.high >= Plus.high || unitSizeDistribution.veryHigh >= Plus.veryHigh) {
 		return "o";
-	} else if (unitSizeDistribution.moderate >= PlusPlus.moderate || unitSizeDistribution.high >= PlusPlus.high || unitSizeDistribution.veryHigh >= PlusPlus.veryHigh) {
+	} 
+	else if (unitSizeDistribution.moderate >= PlusPlus.moderate || unitSizeDistribution.high >= PlusPlus.high || unitSizeDistribution.veryHigh >= PlusPlus.veryHigh) {
 		return "+";
-	} else {
+	} 
+	else {
 		return "++";
 	}
 }
