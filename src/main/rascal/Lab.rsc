@@ -84,7 +84,7 @@ public str numberOfUnits(loc cl, M3 model) {
 //during the online sessions in the course it was said that one could also choose the CC tresholhds, or the SIG/tüvit evaluation criteria
 //but since the author of the aforementioned article also is one of the creators of the SIG we opt for this one.
 
-public tuple[str, tuple[int, int, int]] unitSizeDistribution(loc cl, M3 model) {
+public str unitSizeDistribution(loc cl, M3 model) {
     list[loc] allMethods = [l | l <- methods(model)];
     list[int] methodSizes = [
         //list allows non-unique lines
@@ -126,7 +126,7 @@ public tuple[str, tuple[int, int, int]] unitSizeDistribution(loc cl, M3 model) {
         output += " high: <100.0 * high / totalLOC>% \n";
         output += " very high: <100.0 * veryHigh / totalLOC>% \n";
         
-        return <output, <moderate, high, veryHigh>>; 
+        return output; 
     }
 }
 
@@ -161,7 +161,7 @@ int approxCyclomatic(Declaration methodAST) {
     return cc;
 }
 
-public str unitCCMetrics(loc cl, M3 model) {
+public tuple[map[str, int], int] unitCCMetrics(loc cl, M3 model) {
     set[Declaration] asts = createAstsFromDirectory(cl, true);
 
     map[str, int] complexitySum = ("simple": 0, "moderate": 0, "high": 0, "very high": 0);
@@ -236,8 +236,7 @@ public void generateQualityReport(loc cl, M3 model) {
     int totalLines = linesOfCode(cl, model);
     reportContent += "lines of code: <totalLines>\n";
     reportContent += numberOfUnits(cl, model) + "\n";
-    tuple[str output, tuple[int,int,int] distribution] unitSize = unitSizeDistribution(cl, model);
-    reportContent += unitSize.output;
+    reportContent += unitSizeDistribution(cl, model);
     reportContent += unitCCMetrics(cl, model) + "\n";
     reportContent += duplicationCounter(cl, model) + "\n";
 
