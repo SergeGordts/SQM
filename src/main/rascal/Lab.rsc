@@ -273,27 +273,23 @@ public void runProjectHyperSql(){
     M3 model = createM3FromDirectory(project);
     generateQualityReport(project, model);
 }
-public void runlinesOfCode(){
-    loc project = |file:///SmallSql/|;
-    M3 model = createM3FromDirectory(project);
+public void runlinesOfCode(loc cl){
+    M3 model = createM3FromDirectory(cl);
     println(linesOfCode(project, model));
 }
 
-public void runNumberOfUnits(){
-    loc project = |file:///SmallSql/|;
-    M3 model = createM3FromDirectory(project);
+public void runNumberOfUnits(loc cl){
+    M3 model = createM3FromDirectory(cl);
     println(numberOfUnits(project, model));
 }
 
-public void runUnitCCMetrics(){
-    loc project = |file:///SmallSql/|;
-    M3 model = createM3FromDirectory(project);
+public void runUnitCCMetrics(loc cl){
+    M3 model = createM3FromDirectory(cl);
     println(unitCCMetrics(project, model));
 }
 
-public void runDuplicationCounter(){
-    loc project = |file:///SmallSql/|;
-    M3 model = createM3FromDirectory(project);
+public void runDuplicationCounter(loc cl){
+    M3 model = createM3FromDirectory(cl);
     println(duplicationCounter(project, model));
 }
 
