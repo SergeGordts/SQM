@@ -12,7 +12,7 @@ str riskClass(int cc) {
     if (cc <= 10) return "simple";
     if (cc <= 20) return "moderate";
     if (cc <= 50) return "high";
-    return "very high";
+    return "veryHigh";
 }
 
 // Approximate McCabe CC by counting decision points in method source
@@ -39,7 +39,7 @@ int approxCyclomatic(Declaration methodAST) {
 public map[str, int] calculateComplexityDistribution(loc cl) {
     set[Declaration] asts = createAstsFromDirectory(cl, true);
 
-    map[str, int] complexityDistribution = ("simple": 0, "moderate": 0, "high": 0, "very high": 0);
+    map[str, int] complexityDistribution = ("simple": 0, "moderate": 0, "high": 0, "veryHigh": 0);
 
     visit (asts) {
         case Declaration d: {

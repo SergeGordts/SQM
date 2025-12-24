@@ -45,7 +45,7 @@ str riskClass(int size) {
     return "very high";
 }
 
-public map[str, int] unitSizeDistribution(list[int] methodSizes) {
+public map[str, int] calculateUnitSizeDistribution(list[int] methodSizes) {
     int simple = 0;
     int moderate = 0;
     int high = 0;
@@ -64,7 +64,7 @@ public map[str, int] unitSizeDistribution(list[int] methodSizes) {
             "veryHigh": veryHigh);
 }
 
-public map[str, real] unitSizePercentages(list[int] methodSizes) {
+public map[str, real] calculateUnitSizePercentages(list[int] methodSizes) {
     int simple = 0;
     int moderate = 0;
     int high = 0;
