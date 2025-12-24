@@ -20,6 +20,7 @@ import Scoring::UnitSize;
 import Scoring::Complexity;
 import Scoring::Duplication;
 import Scoring::MaintainabilityRanks;
+import Metrics::Volume;
 
 // helper function
 str normalizeWhiteSpace(str s) {
@@ -36,28 +37,6 @@ list[str] trimmedLines(loc f) {
     !(/^\s*\*/ := l),    
     !(/^\s*\*\/$/ := l) 
     ]; 
-}
-
-// 1 --> volume: Lines of code, skip blank lines and comments
-
-public int linesOfCode(loc cl, M3 model) {
-    set[loc] javaFiles = files(model);
-    int totalLines = 0;
-    
-    for (loc f <- javaFiles) {
-        list[str] lines = readFileLines(f);
-        
-        int codeLines = size([ l | str l <- lines, 
-                           !(/^\s*$/ := l), //not blank
-                           !(/^\s*\/\// := l), //not single line comment //
-                           !(/^\s*\/\*/ := l), //not start of block /*
-                           !(/^\s*\*/ := l),   //not middle of block 
-                           !(/^\s*\*\/$/ := l) //not end of block
-                     ]);
-
-        totalLines += codeLines;
-    }
-    return totalLines;
 }
 
 // 2 ---> number of units (a unit in java is a method). methods() is a core library function and includes constructors and initializers.
@@ -233,7 +212,7 @@ public void generateQualityReport(loc cl, M3 model) {
     str reportContent = "Software Quality Report for: <projectName>\n";
     reportContent += "==========================================\n\n";
     
-    int totalLines = linesOfCode(cl, model);
+    int totalLines = calculateVolume(model);
     reportContent += "lines of code: <totalLines>\n";
     reportContent += numberOfUnits(cl, model) + "\n";
     reportContent += unitSizeDistribution(cl, model);
@@ -275,7 +254,7 @@ public void runProjectHyperSql(){
 }
 public void runlinesOfCode(loc cl){
     M3 model = createM3FromDirectory(cl);
-    println(linesOfCode(project, model));
+    println(calculateVolume(model));
 }
 
 public void runNumberOfUnits(loc cl){
