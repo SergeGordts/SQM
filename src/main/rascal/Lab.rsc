@@ -100,7 +100,7 @@ public void generateQualityReport(loc cl, M3 model) {
 
 //shortcut om smallsql te runnen 
 public void runProjectSmallSql(){
-    loc project = |file:///Users/tibovanhoutte/Documents/SmallSql/|;
+    loc project = |file:///SmallSql/|;
     M3 model = createM3FromDirectory(project);
     generateQualityReport(project, model);
 }
