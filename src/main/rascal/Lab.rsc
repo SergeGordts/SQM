@@ -21,6 +21,7 @@ import Scoring::Complexity;
 import Scoring::Duplication;
 import Scoring::MaintainabilityRanks;
 import Metrics::Volume;
+import Metrics::UnitSize;
 
 // helper function
 str normalizeWhiteSpace(str s) {
@@ -37,76 +38,6 @@ list[str] trimmedLines(loc f) {
     !(/^\s*\*/ := l),    
     !(/^\s*\*\/$/ := l) 
     ]; 
-}
-
-// 2 ---> number of units (a unit in java is a method). methods() is a core library function and includes constructors and initializers.
-public str numberOfUnits(loc cl, M3 model) {
-   list[loc] allMethods = [l | l <- methods(model)];
-   int totalUnits = size(allMethods);
-   str output = "number of units: <totalUnits>\n";
-   return output;
-}
-
-
-// 3 --> unit size: The article "Deriving Metric Thresholds from Benchmark Data" by Visser et al
-// discusses a method that determines metric thresholds empirically from measurement data.
-// Table IV in this article shows the empirically derived Thresholds for Unit Size for Java and other OO systems.
-// The thresholds are based on benchmarked quantiles of the distribution of unit size (LOC per method, exlcuding comments and balnk lines via a regex). 
-// The authors use the 70th, 80th, and 90th percentiles as thresholds that capture meaningful variation while weighting by code volume across many systems.
-// | Metric                       | 70%    | 80%    | 90%    |
-// Unit size (LOC per unit)       | 30     | 44     | 74     |
-// so Simple is ≤ 30, Moderate > 30 and ≤ 44, High > 44 and ≤ 74 and Very high > 74                                 
-
-//they pool measurement data across many systems (100 projects), aggregates relative size weighting (LOC) so larger units contribute proportionally,
-//chooses quantiles (70%, 80%, 90%) that emphasize meaningful code volume splits, and rounds values to practical integer thresholds. 
-
-//during the online sessions in the course it was said that one could also choose the CC tresholhds, or the SIG/tüvit evaluation criteria
-//but since the author of the aforementioned article also is one of the creators of the SIG we opt for this one.
-
-public str unitSizeDistribution(loc cl, M3 model) {
-    list[loc] allMethods = [l | l <- methods(model)];
-    list[int] methodSizes = [
-        //list allows non-unique lines
-        size([
-            l
-            | str l <- readFileLines(m),
-              !(/^\s*$/ := l),       // not blank
-              !(/^\s*\/\// := l),    // not single-line comment //
-              !(/^\s*\/\*/ := l),    // not start of block /*
-              !(/^\s*\*/ := l),      // not middle of block *
-              !(/^\s*\*\/$/ := l)    // not end of block */
-    ]) 
-        | m <- allMethods
-    ];
-
-    int simple = 0;
-    int moderate = 0;
-    int high = 0;
-    int veryHigh = 0;
-
-    for (int lSize <- methodSizes) { 
-        if (lSize <= 30) {
-            simple += lSize;
-        } else if (lSize <= 44) {
-            moderate += lSize;
-        } else if (lSize <= 74) {
-            high += lSize;
-        } else {
-            veryHigh += lSize;
-        }
-    } 
-
-    int totalLOC = sum(methodSizes);
-
-    if (totalLOC > 0) {
-        str output = "unit size: \n";
-        output += " simple: <100.0 * simple / totalLOC>% \n";
-        output += " moderate: <100.0 * moderate / totalLOC>% \n";
-        output += " high: <100.0 * high / totalLOC>% \n";
-        output += " very high: <100.0 * veryHigh / totalLOC>% \n";
-        
-        return output; 
-    }
 }
 
 // 4 --> cyclomatic complexity of each unit: 1-10 is simple, 11-20 more complex, moderate risk, 
@@ -214,15 +145,27 @@ public void generateQualityReport(loc cl, M3 model) {
     
     int totalLines = calculateVolume(model);
     reportContent += "lines of code: <totalLines>\n";
-    reportContent += numberOfUnits(cl, model) + "\n";
-    reportContent += unitSizeDistribution(cl, model);
+
+    int numberOfUnits = calculateNumberOfUnits(model);
+    reportContent += "number of units: <numberOfUnits>\n";
+
+    list[int] methodSizes = calculateMethodSizes(model);
+    map[str, real] unitSizePercentages = unitSizePercentages(methodSizes);
+    reportContent += "unit sizes:\n";
+    for (str r <- ["simple","moderate","high","very high"]) {
+        output += "* <r>: <unitSizePercentages[r]>%\n";
+    }
+
     reportContent += unitCCMetrics(cl, model) + "\n";
     reportContent += duplicationCounter(cl, model) + "\n";
 
     str volumeRank = calculateVolumeRank(totalLines);
     reportContent += "volume score: <volumeRank>\n";
-    str unitSizeRank = calculateUnitsizeRank(unitSize.distribution);
+
+    map[str, int] unitSizeDist = unitSizeDistribution(methodSizes);
+    str unitSizeRank = calculateUnitsizeRank(unitSizeDist);
     reportContent += "unit size score: <unitSizeRank>\n";
+
     str complexityRank = calculateComplexityRank(<complexity.distribution["moderate"], complexity.distribution["high"], complexity.distribution["very high"]>);
     reportContent += "unit complexity score: <complexityRank>\n";
     str duplicationRank = calculateDuplicationRank(duplicationFactor);
@@ -259,7 +202,10 @@ public void runlinesOfCode(loc cl){
 
 public void runNumberOfUnits(loc cl){
     M3 model = createM3FromDirectory(cl);
-    println(numberOfUnits(project, model));
+    list[int] methodSizes = calculateMethodSizes(model);
+    println(calculateNumberOfUnits(model));
+    println(unitSizeDistribution(methodSizes));
+    println(unitSizePercentages(methodSizes));
 }
 
 public void runUnitCCMetrics(loc cl){

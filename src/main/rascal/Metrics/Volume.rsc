@@ -3,7 +3,6 @@ module Metrics::Volume
 import IO;
 import List;
 import lang::java::m3::Core;
-import util::FileSystem;
 
 // 1 --> volume: Lines of code, skip blank lines and comments
 public int calculateVolume(M3 model) {
