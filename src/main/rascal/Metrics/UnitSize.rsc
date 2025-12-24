@@ -3,6 +3,7 @@ module Metrics::UnitSize
 import IO;
 import List;
 import lang::java::m3::Core;
+import Metrics::Utility;
 
 // 2 ---> number of units (a unit in java is a method). methods() is a core library function and includes constructors and initializers.
 public int calculateNumberOfUnits(M3 model) {
@@ -30,19 +31,18 @@ public list[int] calculateMethodSizes(M3 model){
     list[loc] allMethods = [l | l <- methods(model)];
     list[int] methodSizes = [
         //list allows non-unique lines
-        size([
-            l
-            | str l <- readFileLines(m),
-              !(/^\s*$/ := l),       // not blank
-              !(/^\s*\/\// := l),    // not single-line comment //
-              !(/^\s*\/\*/ := l),    // not start of block /*
-              !(/^\s*\*/ := l),      // not middle of block *
-              !(/^\s*\*\/$/ := l)    // not end of block */
-    ]) 
+        size(getLinesOfMethod(m)) 
         | m <- allMethods
     ];
 
     return methodSizes;
+}
+
+str riskClass(int size) {
+    if (size <= 10) return "simple";
+    if (size <= 20) return "moderate";
+    if (size <= 50) return "high";
+    return "very high";
 }
 
 public map[str, int] unitSizeDistribution(list[int] methodSizes) {

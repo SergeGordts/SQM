@@ -22,6 +22,7 @@ import Scoring::Duplication;
 import Scoring::MaintainabilityRanks;
 import Metrics::Volume;
 import Metrics::UnitSize;
+import Metrics::Complexity;
 
 // helper function
 str normalizeWhiteSpace(str s) {
@@ -156,7 +157,11 @@ public void generateQualityReport(loc cl, M3 model) {
         output += "* <r>: <unitSizePercentages[r]>%\n";
     }
 
-    reportContent += unitCCMetrics(cl, model) + "\n";
+    map[str, int] complexityDist = calculateComplexityDistribution(cl);
+    for (str r <- ["simple","moderate","high","very high"]) {
+        real percentage = complexityDist[r] / totalLines * 100.0;
+        output += "* <r>: <percentage>%\n";
+    }
     reportContent += duplicationCounter(cl, model) + "\n";
 
     str volumeRank = calculateVolumeRank(totalLines);
@@ -166,7 +171,7 @@ public void generateQualityReport(loc cl, M3 model) {
     str unitSizeRank = calculateUnitsizeRank(unitSizeDist);
     reportContent += "unit size score: <unitSizeRank>\n";
 
-    str complexityRank = calculateComplexityRank(<complexity.distribution["moderate"], complexity.distribution["high"], complexity.distribution["very high"]>);
+    str complexityRank = calculateComplexityRank(complexityDist);
     reportContent += "unit complexity score: <complexityRank>\n";
     str duplicationRank = calculateDuplicationRank(duplicationFactor);
     reportContent += "duplication score: <duplicationRank>\n";
@@ -210,12 +215,12 @@ public void runNumberOfUnits(loc cl){
 
 public void runUnitCCMetrics(loc cl){
     M3 model = createM3FromDirectory(cl);
-    println(unitCCMetrics(project, model));
+    println(calculateComplexityDistribution(cl));
 }
 
 public void runDuplicationCounter(loc cl){
     M3 model = createM3FromDirectory(cl);
-    println(duplicationCounter(project, model));
+    println(duplicationCounter(cl, model));
 }
 
 //Todo: check met rubric
