@@ -23,7 +23,11 @@ import Metrics::UnitSize;
 import Metrics::Complexity;
 import Metrics::Duplication;
 
+<<<<<<< HEAD
 //generation of text file
+=======
+//6 --> generation of text file
+>>>>>>> 6c465293d5a983497b1dde15b49d0d0441ac2bbd
 
 public void generateQualityReport(loc cl, M3 model) {
     str projectName = cl.file;
@@ -49,7 +53,7 @@ public void generateQualityReport(loc cl, M3 model) {
     map[str, int] complexityDist = calculateComplexityDistribution(cl);
     reportContent += "unit complexities:\n";
     for (str r <- ["simple","moderate","high","veryHigh"]) {
-        int percentage = complexityDist[r] * 100 / totalLines;
+        real percentage = (complexityDist[r] * 100.0) / sum(methodSizes);
         reportContent += "* <r>: <percentage>%\n";
     }
 
@@ -83,7 +87,7 @@ public void generateQualityReport(loc cl, M3 model) {
 
 //shortcut om smallsql te runnen 
 public void runProjectSmallSql(){
-    loc project = |file:///SmallSql/|;
+    loc project = |file:///Users/tibovanhoutte/Documents/SmallSql/|;
     M3 model = createM3FromDirectory(project);
     generateQualityReport(project, model);
 }
