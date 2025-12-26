@@ -4,7 +4,7 @@ import IO;
 import List;
 import lang::java::m3::Core;
 
-// 1 --> volume: Lines of code, skip blank lines and comments
+// volume: Lines of code, skip blank lines and comments
 public int calculateVolume(M3 model) {
     set[loc] javaFiles = files(model);
     int totalLines = 0;

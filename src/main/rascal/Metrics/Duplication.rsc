@@ -5,25 +5,9 @@ import IO;
 import lang::java::m3::Core;
 import Relation;
 import List;
+import Metrics::Helper;
 
-// helper function
-str normalizeWhiteSpace(str s) {
-    return visit(s) {
-        case /\s+/ => " "
-    };
-}
-
-list[str] trimmedLines(loc f) { 
-    return [ trim(normalizeWhiteSpace(l)) | l <- readFileLines(f), 
-    !(/^\s*$/ := l),     
-    !(/^\s*\/\// := l),  
-    !(/^\s*\/\*/ := l),  
-    !(/^\s*\*/ := l),    
-    !(/^\s*\*\/$/ := l) 
-    ]; 
-}
-
-//5 --> Duplication: the percentage of all comment-free, normalized and leading spaces-free code that occurs more than once in equal code blocks of at least 6 lines
+//Duplication: the percentage of all comment-free, normalized and leading spaces-free code that occurs more than once in equal code blocks of at least 6 lines
 public int countDuplicatedLines(M3 model) {
     int duplicatedLinesCount = 0;
     map[str, list[tuple[loc, int]]] blocks = ();

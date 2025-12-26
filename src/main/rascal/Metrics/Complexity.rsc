@@ -4,8 +4,9 @@ import lang::java::m3::AST;
 import IO;
 import List;
 import Metrics::Utility;
+import Metrics::Helper;
 
-// 4 --> cyclomatic complexity of each unit: 1-10 is simple, 11-20 more complex, moderate risk, 
+// cyclomatic complexity of each unit: 1-10 is simple, 11-20 more complex, moderate risk, 
 // 21-50 complex, high risk, > 50 untestable, very high risk
 
 str riskClass(int cc) {

@@ -5,7 +5,7 @@ import List;
 import lang::java::m3::Core;
 import Metrics::Utility;
 
-// 2 ---> number of units (a unit in java is a method). methods() is a core library function and includes constructors and initializers.
+// number of units (a unit in java is a method). methods() is a core library function and includes constructors and initializers.
 public int calculateNumberOfUnits(M3 model) {
    list[loc] allMethods = [l | l <- methods(model)];
    int totalUnits = size(allMethods);
