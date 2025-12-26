@@ -23,23 +23,6 @@ import Metrics::UnitSize;
 import Metrics::Complexity;
 import Metrics::Duplication;
 
-// helper function
-str normalizeWhiteSpace(str s) {
-    return visit(s) {
-        case /\s+/ => " "
-    };
-}
-
-list[str] trimmedLines(loc f) { 
-    return [ trim(normalizeWhiteSpace(l)) | l <- readFileLines(f), 
-    !(/^\s*$/ := l),     
-    !(/^\s*\/\// := l),  
-    !(/^\s*\/\*/ := l),  
-    !(/^\s*\*/ := l),    
-    !(/^\s*\*\/$/ := l) 
-    ]; 
-}
-
 //6 --> generation of text file
 
 public void generateQualityReport(loc cl, M3 model) {
