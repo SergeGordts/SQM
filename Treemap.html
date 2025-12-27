@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<html>
+<head>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+    .node {
+      border: 1px solid white;
+      font: 12px sans-serif;
+      line-height: 12px;
+      overflow: hidden;
+      position: absolute;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <script>
+    // Set dimensions
+    const width = 1000;
+    const height = 600;
+
+    // Create container
+    const container = d3.select("body")
+      .append("div")
+      .style("position", "relative")
+      .style("width", width + "px")
+      .style("height", height + "px");
+
+    // Load the JSON data
+    d3.json("methods.json").then(data => {
+
+      // Convert to hierarchical structure for D3 treemap
+      const root = d3.hierarchy({children: data})
+        .sum(d => d.value)
+        .sort((a, b) => b.value - a.value);
+
+      const treemapLayout = d3.treemap()
+        .size([width, height])
+        .padding(2);
+
+      treemapLayout(root);
+
+      // Add nodes
+      container.selectAll(".node")
+        .data(root.leaves())
+        .enter()
+        .append("div")
+        .attr("class", "node")
+        .style("left", d => d.x0 + "px")
+        .style("top", d => d.y0 + "px")
+        .style("width", d => (d.x1 - d.x0) + "px")
+        .style("height", d => (d.y1 - d.y0) + "px")
+        .style("background-color", d => d.data.backgroundColor)
+        //.text(d => d.data.label)
+        .append("title")
+        .text(d => `${d.data.label}\nLOC: ${d.data.value}\nCC: ${d.data.cc}`);
+    });
+  </script>
+</body>
+</html>
