@@ -5,7 +5,7 @@ import IO;
 import lang::java::m3::Core;
 import Relation;
 import List;
-import Metrics::Helper;
+import Metrics::Utility;
 
 //Duplication: the percentage of all comment-free, normalized and leading spaces-free code that occurs more than once in equal code blocks of at least 6 lines
 public int countDuplicatedLines(M3 model) {

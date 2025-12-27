@@ -3,8 +3,8 @@ module Metrics::Complexity
 import lang::java::m3::AST;
 import IO;
 import List;
+import String;
 import Metrics::Utility;
-import Metrics::Helper;
 
 // cyclomatic complexity of each unit: 1-10 is simple, 11-20 more complex, moderate risk, 
 // 21-50 complex, high risk, > 50 untestable, very high risk
@@ -17,6 +17,7 @@ str riskClass(int cc) {
 }
 
 // Approximate McCabe CC by counting decision points in method source
+// source stackoverflow: https://stackoverflow.com/questions/40064886/obtaining-cyclomatic-complexity
 int approxCyclomatic(Declaration methodAST) {
     int cc = 1; 
     
