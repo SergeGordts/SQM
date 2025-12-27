@@ -41,20 +41,37 @@
 
       treemapLayout(root);
 
-      // Add nodes
-      container.selectAll(".node")
-        .data(root.leaves())
-        .enter()
-        .append("div")
-        .attr("class", "node")
-        .style("left", d => d.x0 + "px")
-        .style("top", d => d.y0 + "px")
-        .style("width", d => (d.x1 - d.x0) + "px")
-        .style("height", d => (d.y1 - d.y0) + "px")
-        .style("background-color", d => d.data.backgroundColor)
-        //.text(d => d.data.label)
-        .append("title")
-        .text(d => `${d.data.label}\nLOC: ${d.data.value}\nCC: ${d.data.cc}`);
+	// Add tooltip div
+	const tooltip = d3.select("body").append("div")
+	  .style("position", "absolute")
+	  .style("background", "rgba(0,0,0,0.7)")
+	  .style("color", "white")
+	  .style("padding", "5px")
+	  .style("border-radius", "4px")
+	  .style("pointer-events", "none")
+	  .style("opacity", 0);
+
+	container.selectAll(".node")
+	  .data(root.leaves())
+	  .enter()
+	  .append("div")
+	  .attr("class", "node")
+	  .style("left", d => d.x0 + "px")
+	  .style("top", d => d.y0 + "px")
+	  .style("width", d => (d.x1 - d.x0) + "px")
+	  .style("height", d => (d.y1 - d.y0) + "px")
+	  .style("background-color", d => d.data.backgroundColor)
+	  .on("mouseover", (event, d) => {
+		tooltip.style("opacity", 1)
+		  .html(`${d.data.label}<br>LOC: ${d.data.value}<br>CC: ${d.data.cc}`);
+	  })
+	  .on("mousemove", (event) => {
+		tooltip.style("left", (event.pageX + 10) + "px")
+		  .style("top", (event.pageY + 10) + "px");
+	  })
+	  .on("mouseout", () => {
+		tooltip.style("opacity", 0);
+	  });
     });
   </script>
 </body>
