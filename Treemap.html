@@ -31,10 +31,18 @@
     d3.json("methods.json").then(data => {
 
       // Convert to hierarchical structure for D3 treemap
+	  // d3. hierarchy takes the data and add to it: depth, height, and parent.
+	  // depth: counts how many parents every node has.
+      // height: counts how many levels of children every node has.
+      // parent: the parent of the node or null for the root node.
+
+	  //our json-array of methods has no children, so they are all leaf nodes	
+	  //construction of a root node with the data as its children, where the size of the leafs are the values of the methods
       const root = d3.hierarchy({children: data})
         .sum(d => d.value)
         .sort((a, b) => b.value - a.value);
 
+	//creates a treemap see https://d3js.org/d3-hierarchy/treemap	
       const treemapLayout = d3.treemap()
         .size([width, height])
         .padding(2);
