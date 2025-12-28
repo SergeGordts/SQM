@@ -1,0 +1,28 @@
+Software Quality Report for: Hsqldb
+==========================================
+
+lines of code: 164161
+number of units: 10239
+unit sizes:
+* simple: 89.92089071%
+* moderate: 4.062896767%
+* high: 3.428069147%
+* veryHigh: 2.588143373%
+unit complexities:
+* simple: 59%
+* moderate: 12%
+* high: 9%
+* veryHigh: 7%
+duplication: 39.00195540% (64026 duplicated lines out of 164161)
+volume score: +
+unit size score: --
+unit complexity score: --
+duplication score: --
+analysability score: -
+changeability score: --
+testability score: --
+mainainability score: --
+
+The SIG maintainability results show that the system has poor overall maintainability, largely due to its size and internal structural problems. With more than 164,000 lines of code and over 10,000 units, the system is substantially larger, which already places pressure on analysability and changeability according to the ISO 9126 mapping between maintainability characteristics and source code properties. Although the volume score is slightly positive (+), indicating that the size alone is not extreme for a system of this type, the benefits of scale are limited by weak unit size and complexity scores. While most units are classified as simple, a noticeable proportion of high and very high unit sizes still negatively affects consistency and increases maintenance effort.
+
+Structurally, complexity and duplication have a strong negative impact on maintainability. Nearly 16% of units fall into the high or very high complexity categories, which strongly reduces analysability, changeability, and testability as shown in the ISO 9126 influence matrix. Even more critical is the very high level of code duplication—approximately 39% of the codebase—which severely undermines changeability and stability, as changes must be replicated across many locations. These factors explain the low analysability, changeability, and testability scores and ultimately lead to an overall maintainability rating of (--). The results suggest that substantial refactoring, particularly focused on reducing duplication and simplifying complex units, would be required to significantly improve the system’s maintainability.

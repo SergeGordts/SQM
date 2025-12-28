@@ -1,0 +1,24 @@
+Software Quality Report for: SmallSql
+==========================================
+
+lines of code: 24887
+number of units: 2572
+unit sizes:
+* simple: 95.68429238%
+* moderate: 1.788491446%
+* high: 1.866251944%
+* veryHigh: 0.6609642302%
+unit complexities:
+* simple: 76.82567059%
+* moderate: 6.748967458%
+* high: 10.71574456%
+* veryHigh: 5.709617392%
+duplication: 19.35950496% (4818 duplicated lines out of 24887)
+volume score: ++
+unit size score: --
+unit complexity score: --
+duplication score: -
+analysability score: -
+changeability score: --
+testability score: --
+mainainability score: --
