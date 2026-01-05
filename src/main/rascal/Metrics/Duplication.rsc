@@ -40,7 +40,7 @@ public int countDuplicatedLines(M3 model) {
     return duplicatedLinesCount;
 }
 
-public rel[str, str, int] calculateIntraFileDuplication(M3 model) {
+public rel[str, int, str] calculateIntraFileDuplication(M3 model) {
     map[str, list[tuple[loc, int]]] blocks = ();
     set[loc] javaFiles = files(model);
 
@@ -85,9 +85,9 @@ public rel[str, str, int] calculateIntraFileDuplication(M3 model) {
     }
 
     //Convert to relation
-    rel[str, str, int] edges = {};
+    rel[str, int, str] edges = {};
     for (tuple[str,str] k <- acc) {
-        edges += <k[0], k[1], acc[k]>;
+        edges += <k[0], acc[k], k[1]>;
     }
 
     return edges;

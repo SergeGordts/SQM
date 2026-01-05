@@ -15,6 +15,7 @@ import lang::json::IO;
 import Metrics::Complexity;
 import Metrics::UnitSize;
 import Metrics::Utility;
+import Metrics::Duplication;
 
 // Fine grained view of methods
 str riskClassCC(int cc) {
@@ -78,7 +79,7 @@ public list[map[str, value]] getMethodData(loc cl) {
 
 void exportMethodData(loc cl) {
     str projectName = cl.file;
-    loc jsonFile = cl + "<methods.json";
+    loc jsonFile = cl + "<methods.json>";
     list[map[str,value]] inputMethodGraphic = getMethodData(cl);
     str jsonData = asJSON(inputMethodGraphic);
     writeFile(jsonFile, jsonData);
@@ -119,4 +120,18 @@ public Content visualizeVolume(loc cl) {
     return barChart(sort(regels, bool(tuple[str, int] a, tuple[str, int] b) { 
         return a[1] > b[1]; 
     }), title="Regels per Javabestand");
+}
+
+public Content visualizeDuplication(loc cl) {
+    M3 model = createM3FromDirectory(cl);
+    
+    rel[str, int, str] edges = calculateIntraFileDuplication(model);
+    
+    return graph(
+        edges,
+        cfg = cytoGraphConfig(
+            title  = "Code duplication between files",
+            \layout = defaultCoseLayout()
+        )
+    );
 }
