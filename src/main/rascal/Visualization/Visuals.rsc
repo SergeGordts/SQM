@@ -123,7 +123,7 @@ public Content visualizeVolume(loc cl) {
 }
 
 str duplicationClassOf(int dup) {
-    if (dup < 5)  return "lowDup";
+    if (dup < 7)  return "lowDup";
     if (dup < 20) return "mediumDup";
     return "highDup";
 }
@@ -141,12 +141,33 @@ public Content visualizeDuplication(loc cl) {
 
     rel[str, str, str] edges =
         classifyDuplication(rawEdges);
+
+     list[CytoStyleOf] duplicationStyles = [
+    cytoStyleOf(
+        selector = edge(equal("label", "lowDup")),
+        style    = defaultEdgeStyle()
+        [color = "#FFFFFF"]
+        [\line-color = "#9E9E9E"]
+    ),
+    cytoStyleOf(
+        selector = edge(equal("label", "mediumDup")),
+        style    = defaultEdgeStyle()
+        [color = "#FFFFFF"]
+        [\line-color = "#FF9800"]
+    ),
+    cytoStyleOf(
+        selector = edge(equal("label", "highDup")),
+        style    = defaultEdgeStyle()
+        [color = "#FFFFFF"]
+        [\line-color = "#F44336"]
+    )];
     
 
     return graph(
         edges,
         cfg = cytoGraphConfig(
             title          = "Code duplication between files",
+            styles  = duplicationStyles,
             \layout        = defaultCoseLayout()
         )
     );
