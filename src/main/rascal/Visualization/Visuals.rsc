@@ -122,16 +122,32 @@ public Content visualizeVolume(loc cl) {
     }), title="Regels per Javabestand");
 }
 
+str duplicationClassOf(int dup) {
+    if (dup < 5)  return "lowDup";
+    if (dup < 20) return "mediumDup";
+    return "highDup";
+}
+
+rel[str, str, str] classifyDuplication(rel[str, int, str] edges) =
+{
+    <from, duplicationClassOf(dup), to>
+    | <from, dup, to> <- edges
+};
+
 public Content visualizeDuplication(loc cl) {
     M3 model = createM3FromDirectory(cl);
+    rel[str, int, str] rawEdges =
+        calculateIntraFileDuplication(model);
+
+    rel[str, str, str] edges =
+        classifyDuplication(rawEdges);
     
-    rel[str, int, str] edges = calculateIntraFileDuplication(model);
-    
+
     return graph(
         edges,
         cfg = cytoGraphConfig(
-            title  = "Code duplication between files",
-            \layout = defaultCoseLayout()
+            title          = "Code duplication between files",
+            \layout        = defaultCoseLayout()
         )
     );
 }
