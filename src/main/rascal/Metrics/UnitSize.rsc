@@ -70,17 +70,17 @@ public map[str, real] calculateUnitSizePercentages(list[int] methodSizes) {
     int high = 0;
     int veryHigh = 0;
 
-    int totalMethods = size(methodSizes);
+    int totalLines = sum(methodSizes);
 
     for (int size <- methodSizes) {
-        if (size <= 30) { simple += 1; }
-        else if (size <= 44) { moderate += 1; }
-        else if (size <= 74) { high += 1; }
-        else { veryHigh += 1; }
+        if (size <= 30) { simple += size; }
+        else if (size <= 44) { moderate += size; }
+        else if (size <= 74) { high += size; }
+        else { veryHigh += size; }
     }
 
-    return ("simple": (simple * 100.0) / totalMethods,
-            "moderate": (moderate * 100.0) / totalMethods,
-            "high": (high * 100.0) / totalMethods,
-            "veryHigh": (veryHigh * 100.0) / totalMethods);
+    return ("simple": (simple * 100.0) / totalLines,
+            "moderate": (moderate * 100.0) / totalLines,
+            "high": (high * 100.0) / totalLines,
+            "veryHigh": (veryHigh * 100.0) / totalLines);
 }
