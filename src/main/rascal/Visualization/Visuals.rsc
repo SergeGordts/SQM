@@ -128,6 +128,12 @@ str duplicationClassOf(int dup) {
     return "highDup";
 }
 
+str duplicationClassOfFile(int dup) {
+    if (dup < 15)  return "lowDup";
+    if (dup < 80) return "mediumDup";
+    return "highDup";
+}
+
 rel[str, str, str] classifyDuplication(rel[str, int, str] edges) =
 {
     <from, duplicationClassOf(dup), to>
@@ -142,7 +148,40 @@ public Content visualizeDuplication(loc cl) {
     rel[str, str, str] edges =
         classifyDuplication(rawEdges);
 
-     list[CytoStyleOf] duplicationStyles = [
+    map[str,int] totalDupPerFile = ();
+    set[str] files = { from | <from,_,_> <- rawEdges } + { to | <_,_,to> <- edges };
+
+    for (str f <- files) {
+        int total = sum([ dup | <from, dup, to> <- rawEdges, from == f || to == f ]);
+        totalDupPerFile[f] = total;
+    }
+
+    list[str] fileClassifier(str f) {
+        int total = sum([dup | <from, dup, to> <- rawEdges, from == f || to == f]);
+        return [duplicationClassOfFile(total)];
+    }
+
+    list[CytoStyleOf] nodeStyles = [
+    cytoStyleOf(
+        selector = \node(className("lowDup")),
+        style    = defaultNodeStyle()
+        [width = "30"]
+        [\background-color = "#9E9E9E"]
+    ),
+    cytoStyleOf(
+        selector = \node(className("mediumDup")),
+        style    = defaultNodeStyle()
+        [width = "60"]
+        [\background-color = "#FF9800"]
+    ),
+    cytoStyleOf(
+        selector = \node(className("highDup")),
+        style    = defaultNodeStyle()
+        [width = "90"]
+        [\background-color = "#F44336"]
+    )];
+
+     list[CytoStyleOf] edgeStyles = [
     cytoStyleOf(
         selector = edge(equal("label", "lowDup")),
         style    = defaultEdgeStyle()
@@ -162,12 +201,14 @@ public Content visualizeDuplication(loc cl) {
         [\line-color = "#F44336"]
     )];
     
+    list[CytoStyleOf] styles = nodeStyles + edgeStyles;
 
     return graph(
         edges,
         cfg = cytoGraphConfig(
             title          = "Code duplication between files",
-            styles  = duplicationStyles,
+            nodeClassifier = fileClassifier,
+            styles  = styles,
             \layout        = defaultCoseLayout()
         )
     );
