@@ -11,10 +11,12 @@ import vis::Charts;
 import vis::Graphs;
 import Content;
 import lang::json::IO;
+import util::Math;
 
 import Metrics::Complexity;
 import Metrics::UnitSize;
 import Metrics::Utility;
+import Metrics::Duplication;
 
 // Fine grained view of methods
 str riskClassCC(int cc) {
@@ -78,7 +80,7 @@ public list[map[str, value]] getMethodData(loc cl) {
 
 void exportMethodData(loc cl) {
     str projectName = cl.file;
-    loc jsonFile = cl + "<methods.json";
+    loc jsonFile = cl + "<methods.json>";
     list[map[str,value]] inputMethodGraphic = getMethodData(cl);
     str jsonData = asJSON(inputMethodGraphic);
     writeFile(jsonFile, jsonData);
@@ -119,4 +121,81 @@ public Content visualizeVolume(loc cl) {
     return barChart(sort(regels, bool(tuple[str, int] a, tuple[str, int] b) { 
         return a[1] > b[1]; 
     }), title="Regels per Javabestand");
+}
+
+str duplicationClassOfFile(int dup) {
+    if (dup < 15)  return "lowVolume";
+    if (dup < 80) return "mediumVolume";
+    return "highVolume";
+}
+
+public Content visualizeDuplication(loc cl) {
+    M3 model = createM3FromDirectory(cl);
+    rel[str, int, str] edges =
+        calculateIntraFileDuplication(model);
+
+    map[str,int] totalDupPerFile = ();
+    set[str] files = { from | <from,_,_> <- edges } + { to | <_,_,to> <- edges };
+
+    for (str f <- files) {
+        int total = sum([ dup | <from, dup, to> <- edges, from == f || to == f ]);
+        totalDupPerFile[f] = total;
+    }
+
+    list[str] fileClassifier(str f) {
+        int total = sum([dup | <from, dup, to> <- edges, from == f || to == f]);
+        return [duplicationClassOfFile(total)];
+    }
+
+    list[CytoStyleOf] nodeStyles = [
+    cytoStyleOf(
+        selector = \node(className("lowVolume")),
+        style    = defaultNodeStyle()
+        [width = "30"]
+        [\background-color = "#9E9E9E"]
+    ),
+    cytoStyleOf(
+        selector = \node(className("mediumVolume")),
+        style    = defaultNodeStyle()
+        [width = "60"]
+        [\background-color = "#FF9800"]
+    ),
+    cytoStyleOf(
+        selector = \node(className("highVolume")),
+        style    = defaultNodeStyle()
+        [width = "90"]
+        [\background-color = "#F44336"]
+    )];
+
+     list[CytoStyleOf] edgeStyles = [
+    cytoStyleOf(
+        selector = edge(less("label", 15)),
+        style    = defaultEdgeStyle()
+        [color = "#FFFFFF"]
+        [\line-color = "#9E9E9E"]
+    ),
+    cytoStyleOf(
+        selector = edge(and([greater("label", 15), less("label", 50)])),
+        style    = defaultEdgeStyle()
+        [color = "#FFFFFF"]
+        [\line-color = "#FF9800"]
+    ),
+    cytoStyleOf(
+        selector = edge(greater("label", 50)),
+        style    = defaultEdgeStyle()
+        [color = "#FFFFFF"]
+        [\line-color = "#F44336"]
+    )];
+    
+    list[CytoStyleOf] styles = nodeStyles + edgeStyles;
+
+    return graph(
+        edges,
+        cfg = cytoGraphConfig(
+            title          = "Code duplication between files",
+            nodeClassifier = fileClassifier,
+            styles  = styles,
+            \layout        = defaultCoseLayout()
+        )
+    );
 }

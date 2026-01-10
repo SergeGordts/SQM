@@ -6,6 +6,7 @@ import lang::java::m3::Core;
 import Relation;
 import List;
 import Metrics::Utility;
+import Set;
 
 //Duplication: the percentage of all comment-free, normalized and leading spaces-free code that occurs more than once in equal code blocks of at least 6 lines
 public int countDuplicatedLines(M3 model) {
@@ -37,4 +38,57 @@ public int countDuplicatedLines(M3 model) {
        duplicatedLinesCount += (size(blocks[blockKey])-1) * 6;
     }
     return duplicatedLinesCount;
+}
+
+public rel[str, int, str] calculateIntraFileDuplication(M3 model) {
+    map[str, list[tuple[loc, int]]] blocks = ();
+    set[loc] javaFiles = files(model);
+
+    //Collect blocks
+    for (loc f <- javaFiles) {
+        list[str] lines = trimmedLines(f);
+        int n = size(lines);
+
+        if (n >= 6) {
+            for (int i <- [0 .. n - 6]) {
+                str block = intercalate("\n", lines[i .. i + 6]);
+
+                if (blocks[block]?) {
+                    blocks[block] += [<f, i>];
+                }
+                else {
+                    blocks[block] = [<f, i>];
+                }
+            }
+        }
+    }
+
+    //Count duplication per file pair
+    map[tuple[str,str], int] acc = ();
+
+    for (str blockKey <- blocks, size(blocks[blockKey]) > 1) {
+        set[str] filesForBlock =
+            { f.file | <f, _> <- blocks[blockKey] };
+
+        list[str] fs = toList(filesForBlock);
+
+        for (int i <- index(fs), int j <- index(fs), i < j) {
+            tuple[str,str] key = <fs[i], fs[j]>;
+
+            if (acc[key]?) {
+                acc[key] += 6;
+            }
+            else {
+                acc[key] = 6;
+            }
+        }
+    }
+
+    //Convert to relation
+    rel[str, int, str] edges = {};
+    for (tuple[str,str] k <- acc) {
+        edges += <k[0], acc[k], k[1]>;
+    }
+
+    return edges;
 }
