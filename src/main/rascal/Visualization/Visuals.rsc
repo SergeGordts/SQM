@@ -80,7 +80,7 @@ public list[map[str, value]] getMethodData(loc cl) {
 
 void exportMethodData(loc cl) {
     str projectName = cl.file;
-    loc jsonFile = cl + "<methods.json>";
+    loc jsonFile = cl + "methods.json";
     list[map[str,value]] inputMethodGraphic = getMethodData(cl);
     str jsonData = asJSON(inputMethodGraphic);
     writeFile(jsonFile, jsonData);
